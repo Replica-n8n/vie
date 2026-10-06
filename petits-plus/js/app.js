@@ -1,0 +1,473 @@
+// Petits plus, tranche 1 : le geste. Un appui compte, et rien ne se perd.
+import { ajouter, retirer, moisAMontrer, comptesDuMois, mediane } from './moments.js';
+import { stockageDuNavigateur, ErreurStockage } from './stockage.js';
+import { LANGAGES, preciser } from './langages.js';
+import { creerEcranAnnee } from './annee.js';
+import { creerPartage, doublonRecent } from './partage.js';
+import { creerReglages, iconeReglages } from './reglages.js';
+
+// Le serveur du partage. En local, le Worker de `wrangler dev` ; ailleurs, le
+// vrai. pp:serveur permet à un essai de viser la production depuis le local.
+const SERVEUR = (() => {
+  try {
+    const force = globalThis.localStorage?.getItem('pp:serveur');
+    if (force) return force;
+  } catch { /* données de site bloquées : on prend l'adresse par défaut */ }
+  return ['localhost', '127.0.0.1'].includes(location.hostname)
+    ? 'http://127.0.0.1:8788'
+    : 'https://petits-plus.jfrxdi0zz.workers.dev';
+})();
+const SYNCHRO_APRES_MS = 800;
+const SYNCHRO_CHAQUE_MS = 60e3;
+
+const MOIS_MONTRES = 12;
+const BANDEAU_MS = 6000;
+const APPUI_LONG_MS = 400;
+const NOMS_COURTS = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin',
+  'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
+const NOMS_LONGS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+const el = (id) => document.getElementById(id);
+const vue = {
+  moisNom: el('mois-nom'), chiffre: el('chiffre'), lecture: el('lecture'),
+  colonnes: el('colonnes'), valeurs: el('valeurs'), noms: el('noms'),
+  mediane: el('mediane'), medianeValeur: el('mediane-valeur'),
+  preciser: el('preciser'), volet: el('volet'), voletFond: el('volet-fond'),
+  langues: el('langues'),
+  souci: el('souci'), plus: el('plus'),
+  bandeau: el('bandeau'), bandeauTexte: el('bandeau-texte'), annuler: el('annuler'),
+  installer: el('installer'),
+};
+
+const stockage = stockageDuNavigateur();
+let moments = [];
+let dernierId = null;
+let minuterieBandeau = null;
+let minuterieLong = null;
+let longOuvert = false;
+let idAPreciser = null;
+// Ce que fait « Annuler » dépend de ce qui vient d'arriver : défaire un appui
+// sur l'accueil, ou rendre un moment retiré depuis l'écran de l'année.
+let annulationCourante = null;
+
+stockage.surContenuAbime((raison) => {
+  direSouci(`Les moments rangés sur cet appareil sont illisibles (${raison}). ` +
+    'Les nouveaux appuis seront gardés normalement.');
+});
+
+function direSouci(texte) {
+  vue.souci.textContent = texte;
+  vue.souci.hidden = false;
+}
+
+function effacerSouci() {
+  vue.souci.hidden = true;
+  vue.souci.textContent = '';
+}
+
+/** Construit les colonnes une seule fois : ensuite on anime ce qui existe. */
+function poserColonnes(mois) {
+  // La ligne de médiane vit DANS le conteneur des colonnes : elle survit au
+  // remplacement des barres, donc on la remet en place après.
+  vue.colonnes.replaceChildren(...mois.map(() => document.createElement('i')));
+  if (vue.mediane) vue.colonnes.append(vue.mediane);
+  vue.valeurs.replaceChildren(...mois.map(() => document.createElement('span')));
+  vue.noms.replaceChildren(...mois.map(() => document.createElement('span')));
+}
+
+function rendre({ anime = false } = {}) {
+  const maintenant = Date.now();
+  const mois = moisAMontrer(moments, { fin: maintenant, maximum: MOIS_MONTRES });
+
+  // Une colonne seule est toujours à 100 % : elle n'apprend rien que le gros
+  // chiffre ne dise déjà. Le graphe n'apparaît donc qu'au deuxième mois, quand
+  // il y a vraiment quelque chose à comparer. On cache son CONTENU et pas la
+  // section, qui reste l'espace poussant le bouton sous le pouce.
+  const aMontrer = mois.length >= 2;
+  vue.colonnes.hidden = !aMontrer;
+  vue.valeurs.hidden = !aMontrer;
+  vue.noms.hidden = !aMontrer;
+  // Compter les BARRES, pas les enfants : la ligne de médiane vit dans le même
+  // conteneur, et la compter faisait croire que les colonnes étaient déjà là.
+  const barres = vue.colonnes.querySelectorAll('i');
+  if (barres.length !== mois.length) poserColonnes(mois);
+
+  const sommet = Math.max(1, ...mois.map((m) => m.compte));
+  mois.forEach((m, i) => {
+    // On anime la barre qui EXISTE DÉJÀ : un élément recréé naît à son état
+    // final et sa transition ne joue jamais.
+    const barre = vue.colonnes.children[i];
+    barre.style.height = `${Math.round((m.compte / sommet) * 100)}%`;
+    barre.classList.toggle('en-cours', m.enCours);
+
+    const valeur = vue.valeurs.children[i];
+    valeur.textContent = String(m.compte);
+    valeur.classList.toggle('en-cours', m.enCours);
+
+    // Le nom se réécrit à CHAQUE rendu : sinon, une app restée ouverte pendant
+    // le passage à un nouveau mois garde les six étiquettes de la veille et
+    // affiche les comptes d'octobre sous « sept ».
+    vue.noms.children[i].textContent = NOMS_COURTS[m.mois];
+  });
+
+  // La ligne se pose sur la MÊME échelle que les barres, sinon elle mentirait.
+  if (vue.mediane) {
+    const valeur = aMontrer ? mediane(mois) : null;
+    vue.mediane.hidden = valeur === null;
+    if (valeur !== null) {
+      vue.mediane.style.bottom = `${(valeur / sommet) * 100}%`;
+      vue.medianeValeur.textContent = Number.isInteger(valeur)
+        ? String(valeur) : valeur.toFixed(1).replace('.', ',');
+    }
+  }
+
+  const duMois = comptesDuMois(moments, maintenant);
+  const nomDuMois = NOMS_LONGS[new Date(maintenant).getMonth()];
+  vue.moisNom.textContent = nomDuMois;
+  vue.chiffre.textContent = String(duMois);
+  // Le graphe est invisible aux lecteurs d'écran : les six mois doivent donc
+  // exister en toutes lettres, sinon la réponse à « est-ce que j'en reçois
+  // plus » leur est purement inaccessible.
+  const debut = (duMois === 0
+    ? `Aucun moment gardé en ${nomDuMois}.`
+    : `${duMois} moment${duMois > 1 ? 's' : ''} gardé${duMois > 1 ? 's' : ''} en ${nomDuMois}.`);
+  const suite = mois.map((m) => `${NOMS_LONGS[m.mois]} ${m.compte}`).join(', ');
+  vue.lecture.textContent = mois.length < 2 ? debut : `${debut} Mois montrés : ${suite}.`;
+
+  if (anime) fairRouler(vue.chiffre);
+  ecranAnnee?.actualiser();
+}
+
+function fairRouler(element) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  element.animate(
+    [{ transform: 'translateY(.28em)', opacity: 0 }, { transform: 'none', opacity: 1 }],
+    { duration: 200, easing: 'cubic-bezier(.25,1,.5,1)' },
+  );
+}
+
+function montrerBandeau(texte, { avecPreciser = true, annulation = annulerDernierAppui, libelleAnnuler = 'Annuler' } = {}) {
+  clearTimeout(minuterieBandeau);
+  vue.bandeauTexte.textContent = texte;
+  if (vue.preciser) vue.preciser.hidden = !avecPreciser || !reglages.proposerLangages;
+  vue.annuler.textContent = libelleAnnuler;
+  annulationCourante = annulation;
+  vue.bandeau.hidden = false;
+  minuterieBandeau = setTimeout(cacherBandeau, BANDEAU_MS);
+}
+
+/**
+ * Cacher le bandeau oublie le dernier moment : « Annuler » n'a plus de cible.
+ * Sauf quand on le cache pour ouvrir le volet : là, le moment est toujours le
+ * nôtre, et son « Annuler » doit revenir intact quand le volet se referme.
+ */
+function cacherBandeau({ oublier = true } = {}) {
+  clearTimeout(minuterieBandeau);
+  vue.bandeau.hidden = true;
+  if (oublier) {
+    dernierId = null;
+    annulationCourante = null;
+  }
+}
+
+/**
+ * Écrit, et ne ment jamais : si le rangement refuse, l'appui est repris.
+ * Les identifiants touchés partent ensuite vers l'autre téléphone.
+ */
+function garder(nouveaux, touches = []) {
+  try {
+    stockage.ecrireMoments(nouveaux);
+    moments = nouveaux;
+    effacerSouci();
+    if (touches.length) {
+      partage.noter(touches);
+      planifierSynchro();
+    }
+    return true;
+  } catch (erreur) {
+    if (!(erreur instanceof ErreurStockage)) throw erreur;
+    direSouci('Ce navigateur refuse de garder les données de ce site, ' +
+      'donc rien n\'a été enregistré. Autorise les données de site pour Petits plus.');
+    return false;
+  }
+}
+
+/**
+ * Le même compliment noté sur les deux téléphones : on le dit, sans genre,
+ * puisque le même écran s'affiche chez chacun. « C'est le même » fait
+ * exactement ce que ferait « Annuler », avec le bon nom.
+ */
+function texteDuBandeau(id) {
+  const moment = moments.find((m) => m.id === id);
+  const doublon = moment && partage.etat().appaire
+    ? doublonRecent(moments, moment, { appareil: partage.appareil }) : null;
+  if (!doublon) return { texte: 'Gardé', libelleAnnuler: 'Annuler' };
+  const min = Math.round(doublon.ecart / 60e3);
+  const quand = min < 1 ? "à l'instant" : `il y a ${min} min`;
+  return { texte: `Déjà noté sur l'autre téléphone ${quand}`, libelleAnnuler: "C'est le même" };
+}
+
+function appuyer({ avecBandeau = true } = {}) {
+  const apres = ajouter(moments, { maintenant: Date.now(), auteur: partage.appareil });
+  if (!garder(apres, [apres.at(-1).id])) return null;
+
+  dernierId = apres.at(-1).id;
+  rendre({ anime: true });
+  navigator.vibrate?.(12);
+  if (avecBandeau) {
+    const { texte, libelleAnnuler } = texteDuBandeau(dernierId);
+    montrerBandeau(texte, { libelleAnnuler });
+  }
+  return dernierId;
+}
+
+/* Le volet des cinq langages. Il ne s'ouvre jamais tout seul, et le moment est
+   DÉJÀ gardé quand il paraît : le fermer sans choisir ne perd rien. */
+function poserLesLangues() {
+  vue.langues.replaceChildren(...LANGAGES.map((l) => {
+    const bouton = document.createElement('button');
+    bouton.type = 'button';
+    bouton.className = 'langue';
+    bouton.dataset.id = l.id;
+    bouton.textContent = l.nom;
+    bouton.addEventListener('click', () => choisirLangue(l.id, l.court));
+    return bouton;
+  }));
+}
+
+/* Pendant que le volet est ouvert, le reste de la page devient inatteignable :
+   sans ça, la tabulation et les lecteurs d'écran passent DERRIÈRE le volet,
+   jusqu'au bouton + qui compterait un moment de plus. */
+const fondDuVolet = () => [...document.body.children].filter((n) => n !== vue.volet);
+const rendreLeFondInatteignable = () => fondDuVolet().forEach((n) => { n.inert = true; });
+const rendreLeFondAtteignable = () => fondDuVolet().forEach((n) => { n.inert = false; });
+
+function ouvrirVolet(id) {
+  if (!id) return;
+  idAPreciser = id;
+  cacherBandeau({ oublier: false });
+  vue.volet.hidden = false;
+  rendreLeFondInatteignable();
+  vue.langues.firstElementChild?.focus();
+}
+
+function fermerVolet({ texte = 'Gardé', choisi = false } = {}) {
+  if (vue.volet.hidden) return;
+  vue.volet.hidden = true;
+  idAPreciser = null;
+  rendreLeFondAtteignable();
+  vue.plus.focus();
+  // Le bandeau revient APRÈS le volet : sans lui, un appui long n'aurait
+  // jamais eu son « Annuler ». Fermer SANS choisir laisse « préciser » offert :
+  // on vient peut-être d'ouvrir le volet par erreur, et le moment est toujours
+  // là pour être précisé.
+  montrerBandeau(texte, { avecPreciser: !choisi });
+}
+
+function choisirLangue(id, court) {
+  const cible = idAPreciser;
+  if (!cible) return;
+  const apres = preciser(moments, cible, id);
+  if (!garder(apres, [cible])) return;
+  rendre();
+  navigator.vibrate?.(8);
+  fermerVolet({ texte: `Gardé · ${court}`, choisi: true });
+}
+
+function annulerDernierAppui() {
+  if (!dernierId) return;
+  const apres = retirer(moments, dernierId, Date.now());
+  if (!garder(apres, [dernierId])) return;
+  cacherBandeau();
+  rendre({ anime: true });
+}
+
+function annuler() {
+  // L'annulation passe AVANT le rangement du bandeau : cacher le bandeau
+  // oublie le dernier moment, et l'annulation n'aurait plus rien à défaire.
+  const action = annulationCourante;
+  annulationCourante = null;
+  action?.();
+  cacherBandeau();
+}
+
+poserLesLangues();
+
+vue.plus.addEventListener('pointerdown', (evenement) => {
+  if (evenement.pointerType === 'mouse' && evenement.button !== 0) return;
+  longOuvert = false;
+  clearTimeout(minuterieLong);
+  // Langages éteints dans les réglages : l'appui long redevient un appui.
+  if (!reglages.proposerLangages) return;
+  minuterieLong = setTimeout(() => {
+    longOuvert = true;
+    navigator.vibrate?.([8, 40, 14]);
+    ouvrirVolet(appuyer({ avecBandeau: false }));
+  }, APPUI_LONG_MS);
+});
+
+// Relâcher compte le moment. Sortir du bouton ou voir le geste annulé par le
+// système n'en compte AUCUN : c'est la façon habituelle de renoncer en cours
+// d'appui, et l'app ne doit pas la punir.
+vue.plus.addEventListener('pointerup', () => {
+  clearTimeout(minuterieLong);
+  if (longOuvert) { longOuvert = false; return; }
+  appuyer();
+});
+for (const renoncer of ['pointercancel', 'pointerleave']) {
+  vue.plus.addEventListener(renoncer, () => {
+    clearTimeout(minuterieLong);
+    longOuvert = false;
+  });
+}
+// Un appui long ne doit pas ouvrir le menu système par-dessus le volet.
+vue.plus.addEventListener('contextmenu', (evenement) => evenement.preventDefault());
+
+// Le clavier ne passe pas par le pointeur : un clic sans pointeur porte
+// detail 0, et c'est le seul cas où on compte ici.
+vue.plus.addEventListener('click', (evenement) => {
+  if (evenement.detail === 0) appuyer();
+});
+
+vue.preciser.addEventListener('click', () => ouvrirVolet(dernierId));
+vue.voletFond.addEventListener('click', () => fermerVolet());
+document.addEventListener('keydown', (evenement) => {
+  if (evenement.key === 'Escape') fermerVolet();
+});
+vue.annuler.addEventListener('click', annuler);
+
+// Installation : un bouton n'apparaît que si le navigateur le propose vraiment.
+let invite = null;
+window.addEventListener('beforeinstallprompt', (evenement) => {
+  evenement.preventDefault();
+  invite = evenement;
+  vue.installer.hidden = false;
+});
+vue.installer.addEventListener('click', async () => {
+  if (!invite) return;
+  vue.installer.hidden = true;
+  await invite.prompt();
+  invite = null;
+});
+
+// L'écran de l'année et son lien sont construits ici, pas dans index.html :
+// Pages garde le HTML dix minutes, et du JS neuf doit tourner sur un HTML ancien.
+const ecranAnnee = creerEcranAnnee({
+  lire: () => moments,
+  retirer: (id) => {
+    const apres = retirer(moments, id, Date.now());
+    if (garder(apres, [id])) rendre();
+  },
+  bandeau: (texte, options) => montrerBandeau(texte, { avecPreciser: false, ...options }),
+});
+{
+  const haut = document.querySelector('.haut');
+  if (haut) {
+    const lien = document.createElement('button');
+    lien.type = 'button';
+    lien.className = 'lien-annee';
+    lien.textContent = "L'année ›";
+    lien.addEventListener('click', () => ecranAnnee.ouvrir());
+    haut.prepend(lien);
+  }
+}
+
+moments = stockage.lireMoments();
+
+let zoneLocale = null;
+try { zoneLocale = globalThis.localStorage ?? null; } catch { /* données de site bloquées */ }
+
+const partage = creerPartage({
+  zone: zoneLocale,
+  serveur: SERVEUR,
+  lireMoments: () => moments,
+  // Lève si le rangement refuse : le partage n'avance alors pas son curseur.
+  ecrireMoments: (liste) => { stockage.ecrireMoments(liste); moments = liste; },
+});
+
+const reglages = creerReglages({
+  partage,
+  zone: zoneLocale,
+  auChangement: () => { rendre(); montrerEtatDuPartage(); planifierSynchro(0); },
+});
+
+{
+  const haut = document.querySelector('.haut');
+  if (haut) {
+    const droite = document.createElement('span');
+    droite.className = 'haut-droite';
+    const ouvrirReglages = document.createElement('button');
+    ouvrirReglages.type = 'button';
+    ouvrirReglages.className = 'ouvrir-reglages';
+    ouvrirReglages.setAttribute('aria-label', 'Réglages');
+    ouvrirReglages.append(iconeReglages());
+    ouvrirReglages.addEventListener('click', () => reglages.ouvrir());
+    if (vue.installer) droite.append(vue.installer);
+    droite.append(ouvrirReglages);
+    haut.append(droite);
+  }
+}
+
+// Un partage COUPÉ se voit sur l'accueil : il ne se répare pas tout seul, et
+// une panne que personne ne voit, c'est deux téléphones qui divergent en
+// silence. Être hors ligne, non : c'est passager, et ça se rattrape seul.
+const alerte = document.createElement('button');
+alerte.type = 'button';
+alerte.className = 'alerte-partage';
+alerte.hidden = true;
+alerte.textContent = 'Partage coupé · réglages ›';
+alerte.addEventListener('click', () => reglages.ouvrir());
+document.querySelector('.haut')?.after(alerte);
+
+function montrerEtatDuPartage() {
+  alerte.hidden = !partage.etat().coupe;
+}
+
+let minuterieSynchro = null;
+function planifierSynchro(dans = SYNCHRO_APRES_MS) {
+  clearTimeout(minuterieSynchro);
+  minuterieSynchro = setTimeout(lancerSynchro, dans);
+}
+
+async function lancerSynchro() {
+  if (!partage.etat().appaire) return;
+  try {
+    await partage.synchroniser();
+  } catch (erreur) {
+    if (!(erreur instanceof ErreurStockage)) throw erreur;
+    direSouci('Ce navigateur refuse de garder les données de ce site, ' +
+      "donc ce qui arrive de l'autre téléphone n'a pas pu être rangé.");
+  }
+  rendre();
+  montrerEtatDuPartage();
+  reglages.actualiser();
+  // Le moment de l'autre téléphone vient peut-être d'arriver : si le bandeau
+  // parle encore de notre dernier appui, il le dit maintenant.
+  if (dernierId && !vue.bandeau.hidden && vue.bandeauTexte.textContent === 'Gardé') {
+    const { texte, libelleAnnuler } = texteDuBandeau(dernierId);
+    if (texte !== 'Gardé') {
+      vue.bandeauTexte.textContent = texte;
+      vue.annuler.textContent = libelleAnnuler;
+    }
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') planifierSynchro(0);
+});
+window.addEventListener('online', () => planifierSynchro(0));
+setInterval(() => {
+  if (document.visibilityState === 'visible') lancerSynchro();
+}, SYNCHRO_CHAQUE_MS);
+
+rendre();
+montrerEtatDuPartage();
+planifierSynchro(0);
+
+// Tester la valeur, pas la présence de la clé : un navigateur peut exposer la
+// propriété sans rien derrière, et « in » suffirait à faire planter le
+// chargement complet de l'app pour un service worker.
+if (navigator.serviceWorker) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}

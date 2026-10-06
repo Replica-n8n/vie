@@ -1,0 +1,22 @@
+{
+  "devDependencies": {
+    "@material/material-color-utilities": "^0.4.0",
+    "playwright": "^1.63.0"
+  },
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "audit": "node tools/audit.mjs",
+    "capture-app": "node tools/capture-app.mjs",
+    "captures": "node tools/captures.mjs",
+    "essai-app": "node tools/essai-app.mjs",
+    "essai-deux": "node tools/essai-deux.mjs",
+    "essai-serveur": "node tools/essai-serveur.mjs",
+    "essai-serveur-mutations": "node tools/essai-serveur-mutations.mjs",
+    "essai-tests": "node tools/essai-tests.mjs",
+    "icones": "node tools/icones.mjs",
+    "palette": "node --import ./tools/crochets.mjs tools/palette.mjs",
+    "polices": "node tools/essai-polices.mjs",
+    "test": "node --test test/*.test.mjs"
+  }
+}
