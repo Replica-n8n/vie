@@ -7,13 +7,15 @@ const FICHIER = new URL('../js/coeur.js', import.meta.url);
 const origine = readFileSync(FICHIER, 'utf8');
 
 const DEFAUTS = [
-  ['un trophée retiré compte encore', 'const vivant = (x) => !x.supprimeLe;', 'const vivant = (x) => true;'],
-  ['« pas de rappel » est ignoré', 't.rappel !== false', 'true'],
-  ['le platine prend la première catégorie couverte', 'moments[0] > dernier', 'moments[0] < dernier || !dernier'],
+  ['un moment retiré compte encore', 'const vivant = (x) => !x.supprimeLe;', 'const vivant = (x) => true;'],
+  ['« pas de rappel » est ignoré', "filter((m) => m.rappel !== false)", 'filter(() => true)'],
+  ['un passage entre dans un axe', "m.genre === 'axe' && m.axe === a.id", 'm.axe === a.id || (m.genre === "passage" && a.id === "vivre")'],
+  ['plus de trois hauts faits', '.sort(parTemps).slice(0, 3)', '.sort(parTemps)'],
   ['hausse et baisse inversées', '(a > b ? hausse : baisse)', '(a < b ? hausse : baisse)'],
-  ['la tendance ne monte jamais', 'if (ecart >= seuil)', 'if (ecart >= 99)'],
-  ['un mois sauté est comblé', 'connus.get(m) ?? null', 'connus.get(m) ?? 3'],
-  ['les années vides disparaissent du parcours', 'for (let a = debut; a <= fin; a += 1) {', 'for (let a = debut; a <= fin; a += 1) { if (!datees.some((e) => e.annee === a)) continue;'],
+  ['les années vides disparaissent du ruban', 'for (let a = debut; a <= fin; a += 1) annees.push(', 'for (let a = debut; a <= fin; a += 1) if (dates.some((m) => m.annee === a)) annees.push('],
+  ['un moment sans année entre dans le ruban', 'const dates = actifs.filter((m) => m.annee);', 'const dates = actifs.map((m) => ({ ...m, annee: m.annee || anneeFin }));'],
+  ['l’anniversaire du jour est ignoré', 'if (anniversaires.length) return', 'if (false) return'],
+  ['on compare au point du même mois', 'decalerMois(actuel.mois, -ecart)', 'decalerMois(actuel.mois, 0)'],
 ];
 
 let rates = 0;

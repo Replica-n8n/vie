@@ -1,0 +1,430 @@
+<title>Trophées de vie</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,300..800&display=swap">
+<style>
+/* Une page d'accueil de navigateur : tout se lit sur un écran d'ordinateur, sans défiler ni cliquer.
+   Verre calme : un ciel d'aube qui suit la météo du mois, des panneaux translucides, tout en blanc.
+   Le seul accent est l'or doux de l'aube, réservé à ce qui a le plus compté. */
+:root{
+  --body:"Atkinson Hyperlegible",Verdana,system-ui,sans-serif;
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --bg:#1F2A44; --ink:#FFFFFF; --muted:#E6E5F0; --line:rgba(255,255,255,.28); --or:#F7CF78; --sur-or:#3A2A00; --nuit:#27304F;
+  --verre:rgba(22,26,48,.38); --verre-opaque:#2A2F52; --volet:#232A4A; --volet-point:#2E2740;
+  --c1:#1D2742; --c2:#3A4070; --c3:#8A6480; --c4:#C99679;
+  color-scheme:dark;
+}
+:root[data-meteo="5"]{ --c1:#20305A; --c2:#44508C; --c3:#B07486; --c4:#E3AC7C }
+:root[data-meteo="3"]{ --c1:#1E2640; --c2:#383E66; --c3:#6E5C78; --c4:#9A8580 }
+:root[data-meteo="2"]{ --c1:#1C2336; --c2:#30364F; --c3:#4D4E66; --c4:#6C6A78 }
+:root[data-meteo="1"]{ --c1:#171C2A; --c2:#252A3B; --c3:#353A4C; --c4:#474C5C }
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{height:100%}
+body{margin:0;background:linear-gradient(155deg,var(--c1) 0%,var(--c2) 38%,var(--c3) 70%,var(--c4) 100%) fixed var(--bg);color:var(--ink);font:16px/1.4 var(--body)}
+h1,h2,p,ul{margin:0}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid #FFFFFF;outline-offset:3px}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+
+.page{height:100%;max-width:1680px;margin:0 auto;padding-inline:clamp(16px,3vw,48px);padding-block:clamp(16px,3vh,36px);
+  display:grid;gap:clamp(14px,2.2vh,24px) clamp(16px,2vw,32px);
+  grid-template-columns:minmax(0,1fr) clamp(300px,26vw,400px);grid-template-rows:auto minmax(110px,1.1fr) auto minmax(min-content,.9fr);
+  grid-template-areas:"top top" "sv cv" "ax cv" "rb hf"}
+.top{grid-area:top}.sv{grid-area:sv}.cv{grid-area:cv}.ax{grid-area:ax}.rb{grid-area:rb}.hf{grid-area:hf}
+.p,.cell{background:var(--verre);border-radius:28px;min-width:0;padding:clamp(14px,2.2vh,24px) clamp(16px,1.6vw,26px);
+  -webkit-backdrop-filter:blur(26px) saturate(1.4);backdrop-filter:blur(26px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -1px 0 rgba(0,0,0,.22),0 14px 30px rgba(10,12,30,.22)}
+@media (prefers-reduced-transparency:reduce){ .p,.cell{background:var(--verre-opaque);-webkit-backdrop-filter:none;backdrop-filter:none} }
+@media (prefers-contrast:more){ .p,.cell{background:var(--verre-opaque);-webkit-backdrop-filter:none;backdrop-filter:none} }
+.lab{font:700 14px/1.1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.petit{font-size:15px;color:var(--muted)}
+.num{font-family:var(--display);font-weight:300;line-height:.95;font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.02em}
+
+/* En-tête */
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+h1{font:500 clamp(34px,4.2vw,56px)/1 var(--display);letter-spacing:-.02em}
+.exemple{display:inline-block;vertical-align:middle;margin-left:12px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);font:400 14px/1.2 var(--body);letter-spacing:0}
+.actions{display:flex;gap:8px}
+.btn{min-height:48px;padding:0 22px;border-radius:24px;border:1.5px solid var(--line);background:rgba(22,26,48,.4);font-weight:700;transition:border-radius .2s cubic-bezier(.25,1,.5,1)}
+.btn:active{border-radius:12px}
+.btn.main{background:#FFFFFF;border-color:#FFFFFF;color:var(--nuit)}
+
+/* Les niveaux : plus c'était dur, plus la lune est pleine. La pleine lune prend l'or de l'aube. */
+.m{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;border:2px solid #FFFFFF;background:transparent}
+.m.a{background:linear-gradient(90deg,transparent 50%,#FFFFFF 50%)}
+.m.o{background:var(--or);border-color:var(--or);box-shadow:0 0 0 4px rgba(247,207,120,.22)}
+.m.g{width:26px;height:26px}
+
+/* Souvenir du jour */
+.sv{display:flex;flex-direction:column;justify-content:center;gap:8px}
+.sv .k{font-size:15px;color:var(--muted)}
+.sv .t{font:500 clamp(30px,3.6vw,52px)/1.05 var(--display);letter-spacing:-.02em;text-wrap:balance;max-width:24ch}
+.sv .q{font-size:18px;font-style:italic;max-width:56ch;color:var(--muted)}
+
+/* Total et cinq axes */
+.ax{display:grid;grid-template-columns:1.25fr repeat(5,minmax(0,1fr));gap:clamp(8px,1vw,16px)}
+.cell{display:flex;flex-direction:column;gap:6px}
+.cell .num{font-size:clamp(48px,5.4vw,84px)}
+.cell .n{font-weight:700;line-height:1.2}
+.cell .pts{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:2px;min-height:24px;padding-left:4px}
+.leg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;margin-top:4px;padding-left:4px}
+.leg span{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+
+/* Ruban des années */
+.rb{display:flex;flex-direction:column;justify-content:flex-end;gap:10px}
+.rb-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lien{min-height:44px;padding:0 4px;border:0;background:none;font-weight:700;text-decoration:underline;text-underline-offset:4px}
+.ruban{display:flex;align-items:flex-end;border-bottom:1.5px solid var(--line);padding-bottom:10px;flex:1;min-height:44px}
+.an{flex:1 1 0;display:flex;flex-direction:column-reverse;align-items:center;gap:7px;min-width:0}
+.ans{display:flex;justify-content:space-between;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* En ce moment */
+.cv{display:flex;flex-direction:column;justify-content:center;gap:10px}
+.radar{display:block;width:100%;max-height:52%;overflow:visible}
+.radar .grid{fill:none;stroke:var(--line)}
+.radar .past{fill:none;stroke:var(--muted);stroke-width:1.25;stroke-dasharray:4 4}
+.radar .now{fill:#FFFFFF;fill-opacity:.14;stroke:#FFFFFF;stroke-width:2;stroke-linejoin:round}
+.radar text{fill:var(--muted);font:400 15px var(--body)}
+.radar text tspan{fill:var(--ink);font-weight:700}
+.temps{font:500 clamp(30px,3vw,44px)/1 var(--display);letter-spacing:-.02em}
+
+/* Hauts faits */
+.hf{display:flex;flex-direction:column;justify-content:center;gap:12px}
+.hf ul{list-style:none;padding:0;display:grid;gap:10px}
+.hf li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:center;justify-items:center}
+.hf li div{justify-self:start}
+.hf strong{display:block;line-height:1.2}
+
+/* Notification */
+.toast{position:fixed;z-index:50;top:20px;right:20px;max-width:380px;background:#FFFFFF;color:var(--nuit);border-radius:999px;padding:10px 24px;box-shadow:0 12px 32px rgba(10,12,30,.4);
+  transform:translateY(-160%);opacity:0;transition:transform .3s cubic-bezier(.25,1,.5,1),opacity .3s}
+.toast.on{transform:none;opacity:1}
+.toast small{display:block;font-size:14px}
+.toast strong{font-family:var(--display)}
+
+/* Volets : des aplats pleins et un bandeau clair, pour ne pas les confondre avec la page */
+.scrim{position:fixed;inset:0;z-index:30;background:rgba(8,10,24,.62);display:grid;place-items:center;padding:16px}
+.dlg{--tete:#FFFFFF;--sur-tete:#27304F;background:var(--volet);width:100%;max-width:640px;max-height:min(88dvh,820px);border-radius:28px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.dlg[data-kind="point"]{--tete:var(--or);--sur-tete:var(--sur-or);background:var(--volet-point)}
+.dlg-head{background:var(--tete);color:var(--sur-tete);padding:18px 22px 16px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.dlg-head h2{font:600 26px/1.15 var(--display);letter-spacing:-.01em;text-wrap:balance}
+.dlg-head p{font-size:14px}
+.x{flex:none;width:44px;height:44px;border-radius:50%;border:1.5px solid currentColor;background:none;font-size:20px;line-height:1}
+.dlg-head .x:focus-visible{outline-color:currentColor}
+.dlg-body{overflow-y:auto;padding:18px 22px 24px;flex:1;display:flex;flex-direction:column;gap:16px}
+.dlg-foot{padding:14px 22px;background:rgba(0,0,0,.22);display:flex;gap:8px;justify-content:flex-end}
+.dlg-foot .btn{min-height:52px;border-radius:26px;background:transparent}
+.dlg-foot .btn.main{min-width:220px;background:var(--tete);border-color:var(--tete);color:var(--sur-tete)}
+.dlg ::placeholder{color:var(--muted);opacity:1}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:46px;max-width:100%;padding:6px 16px;line-height:1.2;text-align:left;border-radius:23px;border:1.5px solid var(--line);background:rgba(255,255,255,.08);font-weight:700;display:flex;align-items:center;gap:8px;transition:border-radius .2s cubic-bezier(.25,1,.5,1)}
+.chip[aria-pressed="true"]{background:#FFFFFF;border-color:#FFFFFF;color:var(--nuit);border-radius:12px}
+.chip input{width:78px;min-height:34px;border-radius:9px;border:1.5px solid var(--nuit);background:transparent;color:var(--nuit);padding:0 8px;font-weight:700}
+.chip input::placeholder{color:var(--nuit) !important;opacity:.7 !important}
+.q{display:grid;gap:6px}
+.q label{font-weight:700;line-height:1.25}
+.q .ligne{display:flex;gap:8px;flex-wrap:wrap}
+.field{min-height:50px;min-width:0;border-radius:14px;border:1.5px solid var(--line);background:rgba(255,255,255,.08);padding:0 14px;flex:1 1 220px}
+.field.an-in{flex:0 0 96px}
+.niv{display:flex;gap:4px}
+.niv button{width:50px;height:50px;border-radius:14px;border:1.5px solid var(--line);background:rgba(255,255,255,.08);display:grid;place-items:center}
+.niv button[aria-pressed="true"]{border-color:#FFFFFF;background:rgba(255,255,255,.24)}
+.aide{font-size:14px;color:var(--muted)}
+.sl{display:grid;grid-template-columns:150px minmax(0,1fr) 36px;gap:12px;align-items:center}
+.sl label{font-weight:700}
+.sl input{width:100%;height:44px;accent-color:var(--or);margin:0}
+.sl output{font:300 30px/1 var(--display);text-align:right}
+.duo{display:grid;grid-template-columns:230px minmax(0,1fr);gap:20px;align-items:center}
+.duo .radar{max-height:none}
+.duo .radar text{display:none}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opts.row{flex-direction:row}
+.opt{min-height:52px;padding:0 18px;border-radius:26px;border:1.5px solid var(--line);background:rgba(255,255,255,.08);font-weight:700;text-align:left;flex:1;transition:border-radius .2s cubic-bezier(.25,1,.5,1)}
+.opts.row .opt{text-align:center;padding:0 6px}
+.opt[aria-pressed="true"]{background:var(--tete);border-color:var(--tete);color:var(--sur-tete);border-radius:14px}
+.annee{display:grid;grid-template-columns:86px minmax(0,1fr);gap:4px 12px;padding-top:14px;border-top:1px solid var(--line)}
+.annee:first-child{border-top:0;padding-top:0}
+.annee > b{font:300 34px/1 var(--display)}
+.annee ul{list-style:none;padding:0;display:grid;gap:10px}
+.annee li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:8px;align-items:start;justify-items:center}
+.annee li div{justify-self:start}
+.annee li .m{margin-top:3px}
+.annee strong{display:block;line-height:1.25}
+@media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+
+/* Écran étroit : la page s'empile et défile */
+@media (max-width:900px){
+  html,body{height:auto}
+  .page{height:auto;grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-template-areas:"top" "sv" "ax" "rb" "cv" "hf"}
+  .ax{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ruban{min-height:64px}
+  .radar{max-height:none;max-width:340px;margin:0 auto}
+  .sl{grid-template-columns:minmax(0,1fr) 36px}.sl label{grid-column:1 / -1}
+  .duo{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+
+<div class="page">
+  <header class="top">
+    <div><p class="petit" id="today"></p><h1><span id="hello">Bonjour</span></h1></div>
+    <div class="actions">
+      <button class="btn" id="btn-point" type="button">Faire le point</button>
+      <button class="btn main" id="btn-add" type="button">+ Ajouter</button>
+    </div>
+  </header>
+
+  <section class="sv p" aria-label="Souvenir du jour" id="sv"></section>
+
+  <section class="cv p" aria-label="En ce moment">
+    <svg class="radar" id="radar" viewBox="-180 -112 360 224" role="img" aria-label="Carte de vie sur huit domaines, aujourd’hui et il y a trois mois"></svg>
+    <p class="lab">En ce moment</p>
+    <p class="temps" id="temps"></p>
+    <p class="petit" id="synth"></p>
+  </section>
+
+  <section class="ax" aria-label="En chiffres" id="axes"></section>
+
+  <section class="rb p" aria-labelledby="rb-t">
+    <div class="rb-head"><h2 class="lab" id="rb-t">Ta vie d’un coup d’œil</h2><button class="lien" id="btn-parcours" type="button">Tout voir</button></div>
+    <div class="ruban" id="ruban"></div>
+    <div class="ans" id="ans" aria-hidden="true"></div>
+  </section>
+
+  <section class="hf p" aria-labelledby="hf-t">
+    <h2 class="lab" id="hf-t">Hauts faits</h2>
+    <ul id="feats"></ul>
+  </section>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <section class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="dlg-head"><div><p id="dlg-step"></p><h2 id="dlg-t"></h2></div><button class="x" id="dlg-x" type="button" aria-label="Fermer">×</button></div>
+    <div class="dlg-body" id="dlg-body"></div>
+    <div class="dlg-foot"><button class="btn" id="dlg-back" type="button">Retour</button><button class="btn main" id="dlg-next" type="button"></button></div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var NOW = new Date(), AN = NOW.getFullYear();
+  var MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  var JOURS = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+  var NIVEAUX = [["b","effort","Un effort"],["a","cap","Un cap"],["o","montagne","Une montagne"]];
+
+  // Les cinq axes : les cinq regrets recueillis par Bronnie Ware, retournés en ce qu'on a fait.
+  var AXES = [
+    ["vivre","Vivre ma vie à moi","Un choix fait pour toi, contre ce qu’on attendait de toi ?"],
+    ["hors","Vivre hors du travail","Un moment où ta vie est passée avant le travail ?"],
+    ["dire","Dire ce que je ressens","Une chose difficile que tu as osé dire à quelqu’un ?"],
+    ["amis","Garder mes amis","Une amitié que tu as su garder ?"],
+    ["bonheur","M’autoriser le bonheur","Une chose que tu t’es autorisée, juste pour le plaisir ?"]
+  ];
+  // Les passages : les grandes étapes d'une vie, d'après le script de vie de Berntsen et Rubin (2004).
+  // « Mon premier chez-moi » vient d'elle, pas de l'étude.
+  var PASSAGES = ["Quitter la maison","Mon premier argent gagné","Un diplôme","Premier emploi","Trouver ma voie","Tomber amoureuse","Me marier","Avoir un enfant","Un grand voyage","Une grande réussite","Mon premier chez-moi"];
+  var SCENES = ["Ton plus beau moment ?","Un tournant dans ta vie ?","Le plus dur que tu as traversé ?"];
+
+  // Contenu d'exemple, sans personnage : il disparaîtra dès la première saisie réelle.
+  var T = [
+    {y:AN-17, t:"Mon premier argent gagné", x:"passage", m:"b"}, {y:AN-16, t:"Le bac", x:"passage", m:"b"}, {y:AN-16, t:"Permis de conduire", x:"passage", m:"a"},
+    {y:AN-14, t:"Partir seule à Lisbonne", x:"vivre", m:"a"}, {y:AN-12, t:"Licence", x:"passage", m:"a"},
+    {y:AN-11, t:"Master en urbanisme", x:"passage", m:"o", pin:1}, {y:AN-11, t:"Premier emploi", x:"passage", m:"b"},
+    {y:AN-9, t:"Mon premier chez-moi", x:"passage", m:"a"}, {y:AN-8, t:"Six mois à Montréal", x:"vivre", m:"o", pin:1},
+    {y:AN-7, t:"Apprendre à nager", x:"hors", m:"a"}, {y:AN-6, t:"Tenir pendant le confinement", x:"scene", m:"a"}, {y:AN-6, t:"Épargne de secours", x:"passage", m:"a"},
+    {y:AN-5, t:"Demander de l’aide", x:"dire", m:"a"}, {y:AN-5, t:"Dire que je partais", x:"dire", m:"o", pin:1},
+    {y:AN-4, t:"Premier 10 km", x:"hors", m:"b"}, {y:AN-4, t:"Exposer mes photos", x:"bonheur", m:"a"}, {y:AN-3, t:"Devenir marraine", x:"amis", m:"a"},
+    {y:AN-2, t:"Mon premier semi-marathon", x:"hors", m:"o", jour:1, n:"J’ai cru abandonner au 15e kilomètre. 2 h 07 à l’arrivée."},
+    {y:AN-1, t:"Vingt ans d’une même amitié", x:"amis", m:"a"}, {y:AN-1, t:"M’offrir le Japon", x:"bonheur", m:"b"}, {y:AN-1, t:"Changer de métier", x:"vivre", m:"o"},
+    {y:AN, t:"Finir mon potager", x:"hors", m:"b"}
+  ];
+  var STATS = [["Santé",7,6],["Travail",8,8],["Argent",5,5],["Amour",6,4],["Proches",8,7],["Loisirs",6,6],["Évolution",7,7],["Cadre de vie",7,6]];
+  var METEOS = ["Orageux","Nuageux","Variable","Éclaircies","Grand soleil"], meteo = 4;
+
+  var NS="http://www.w3.org/2000/svg";
+  function $(id){ return document.getElementById(id); }
+  function el(tag, cls, txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+  function btn(cls, txt, pressed){ var b=el("button",cls,txt); b.type="button"; if(pressed!=null) b.setAttribute("aria-pressed",String(pressed)); return b; }
+  function m(k, grand){ var s=el("span","m "+k+(grand?" g":"")); s.setAttribute("aria-hidden","true"); return s; }
+  function deux(n){ return ("0"+n).slice(-2); }
+
+  function heure(){ var d=new Date(); $("today").textContent = JOURS[d.getDay()]+" "+d.getDate()+" "+MOIS[d.getMonth()]+" · "+deux(d.getHours())+" h "+deux(d.getMinutes()); }
+  heure(); setInterval(heure, 20000);
+  $("hello").textContent = NOW.getHours()>=18 ? "Bonsoir" : "Bonjour";
+  $("hello").parentNode.appendChild(el("span","exemple","contenu d’exemple"));
+
+  function dessiner(){
+    // Souvenir du jour
+    var s = T.filter(function(e){ return e.jour; })[0], sv=$("sv"); sv.textContent="";
+    sv.appendChild(el("p","k","Il y a "+(AN-s.y)+" ans aujourd’hui")); sv.appendChild(el("p","t",s.t)); if(s.n) sv.appendChild(el("p","q","« "+s.n+" »"));
+
+    // Total et cinq axes
+    var datees = T.filter(function(e){ return e.y; }), debut = Math.min.apply(null, datees.map(function(e){ return e.y; }));
+    var ax=$("axes"); ax.textContent="";
+    var c=el("div","cell"); c.appendChild(el("span","num",String(T.length))); c.appendChild(el("span","n","moments")); c.appendChild(el("span","petit","en "+(AN-debut)+" ans"));
+    var leg=el("span","leg");
+    NIVEAUX.slice().reverse().forEach(function(k){ var n=T.filter(function(e){ return e.m===k[0]; }).length, i=el("span"); i.appendChild(m(k[0])); i.appendChild(document.createTextNode(n+" "+k[1]+(n>1?"s":""))); leg.appendChild(i); });
+    c.appendChild(leg); ax.appendChild(c);
+    AXES.forEach(function(a){
+      var siens=T.filter(function(e){ return e.x===a[0]; }), d=el("div","cell");
+      d.appendChild(el("span","num",String(siens.length))); d.appendChild(el("span","n",a[1]));
+      var p=el("span","pts"); siens.forEach(function(e){ p.appendChild(m(e.m)); }); d.appendChild(p); ax.appendChild(d);
+    });
+
+    // Ruban : toutes les années d'un coup
+    var rb=$("ruban"), lb=$("ans"); rb.textContent=""; lb.textContent="";
+    for(var y=debut;y<=AN;y++){ var col=el("div","an"); T.filter(function(e){ return e.y===y; }).forEach(function(e){ col.appendChild(m(e.m)); }); rb.appendChild(col); }
+    [debut, Math.round((debut+AN)/2), AN].forEach(function(a){ lb.appendChild(el("span",null,String(a))); });
+
+    // Hauts faits
+    var f=$("feats"); f.textContent="";
+    T.filter(function(e){ return e.pin; }).slice(0,3).forEach(function(e){
+      var li=el("li"); li.appendChild(m(e.m,true)); var d=el("div"); d.appendChild(el("strong",null,e.t)); d.appendChild(el("span","petit",String(e.y))); li.appendChild(d); f.appendChild(li);
+    });
+
+    // En ce moment
+    radar($("radar"), STATS.map(function(x){ return x[1]; }), STATS.map(function(x){ return x[2]; }));
+    $("temps").textContent = METEOS[meteo-1];
+    var up = STATS.filter(function(x){ return x[1]>x[2]; }).sort(function(a,b){ return (b[1]-b[2])-(a[1]-a[2]); }).map(function(x){ return x[0]; });
+    $("synth").textContent = !up.length ? "Tout tient bon depuis trois mois." : (up.length>1 ? up.slice(0,-1).join(", ")+" et "+up[up.length-1]+" montent" : up[0]+" monte")+" depuis trois mois.";
+    document.documentElement.setAttribute("data-meteo", meteo);
+  }
+
+  function radar(svg, now, past){
+    var R=78; svg.textContent="";
+    function pt(i,v){ var a=(-90+i*45)*Math.PI/180; return [Math.cos(a)*R*v/10, Math.sin(a)*R*v/10]; }
+    function poly(vals,cls){ var p=document.createElementNS(NS,"polygon"); p.setAttribute("points",vals.map(function(v,i){ var q=pt(i,v); return q[0].toFixed(1)+","+q[1].toFixed(1); }).join(" ")); p.setAttribute("class",cls); svg.appendChild(p); }
+    [5,10].forEach(function(g){ poly(now.map(function(){ return g; }),"grid"); });
+    poly(past,"past"); poly(now,"now");
+    now.forEach(function(v,i){
+      var t=document.createElementNS(NS,"text"), l=pt(i,11.4);
+      t.setAttribute("x",l[0].toFixed(1)); t.setAttribute("y",(l[1]+(i===0?-4:i===4?6:0)).toFixed(1));
+      t.setAttribute("text-anchor", Math.abs(l[0])<1 ? "middle" : l[0]>0 ? "start" : "end"); t.setAttribute("dominant-baseline","middle");
+      t.textContent=STATS[i][0]+" "; var n=document.createElementNS(NS,"tspan"); n.textContent=v; t.appendChild(n); svg.appendChild(t);
+    });
+  }
+  dessiner();
+
+  var timer;
+  function toast(petit, fort){
+    var t=$("toast"); t.textContent=""; t.appendChild(el("small",null,petit)); t.appendChild(el("strong",null,fort));
+    t.classList.add("on"); clearTimeout(timer); timer=setTimeout(function(){ t.classList.remove("on"); }, 4200);
+  }
+
+  // Volet à étapes
+  var flow=null, ouvreur=null;
+  function ouvrir(kind, steps, fin, onDone){ $("scrim").firstElementChild.setAttribute("data-kind",kind); flow={steps:steps,i:0,fin:fin,onDone:onDone}; ouvreur=document.activeElement; $("scrim").hidden=false; etape(); }
+  function fermer(){ $("scrim").hidden=true; flow=null; if(ouvreur) ouvreur.focus(); }
+  function etape(){
+    var s=flow.steps[flow.i];
+    $("dlg-step").textContent = s.label+(flow.steps.length>1 ? " · "+(flow.i+1)+" sur "+flow.steps.length : "");
+    $("dlg-t").textContent=s.title; $("dlg-body").textContent=""; s.render($("dlg-body")); $("dlg-body").scrollTop=0;
+    $("dlg-back").hidden = flow.i===0;
+    $("dlg-next").textContent = flow.i===flow.steps.length-1 ? flow.fin : "Suivant";
+  }
+  $("dlg-next").addEventListener("click",function(){ if(flow.i<flow.steps.length-1){ flow.i++; etape(); } else { var f=flow.onDone; fermer(); if(f) f(); } });
+  $("dlg-back").addEventListener("click",function(){ flow.i--; etape(); });
+  $("dlg-x").addEventListener("click",fermer);
+  $("scrim").addEventListener("click",function(e){ if(e.target===this) fermer(); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && flow) fermer(); });
+
+  function annee(v){ v=+v; return v>=1930 && v<=AN ? v : null; }
+  function legende(body){ var l=el("p","leg"); NIVEAUX.forEach(function(k){ var i=el("span"); i.appendChild(m(k[0])); i.appendChild(document.createTextNode(k[2].toLowerCase())); l.appendChild(i); }); body.appendChild(l); }
+  // Une question : quelques mots, l'année, et à quel point c'était dur
+  function question(body, id, texte, etat, aide, sansNiveau){
+    var q=el("div","q"), lb=el("label",null,texte), l=el("div","ligne"), tx=el("input","field"), an=el("input","field an-in");
+    tx.type="text"; tx.id="q-"+id; lb.htmlFor=tx.id; tx.placeholder="En quelques mots"; tx.value=etat.t||""; tx.addEventListener("input",function(){ etat.t=tx.value; });
+    an.type="number"; an.inputMode="numeric"; an.id="a-"+id; an.placeholder="Année"; an.setAttribute("aria-label","Année, facultative"); an.value=etat.y||""; an.addEventListener("input",function(){ etat.y=an.value; });
+    q.appendChild(lb); if(aide) q.appendChild(el("span","aide",aide)); l.appendChild(tx); l.appendChild(an);
+    if(!sansNiveau){
+      var nv=el("div","niv"); nv.setAttribute("role","group"); nv.setAttribute("aria-label","À quel point c’était dur");
+      NIVEAUX.forEach(function(k){
+        var b=btn(null,null,etat.m===k[0]); b.id="n-"+id+"-"+k[0]; b.title=k[2]; b.setAttribute("aria-label",k[2]); b.appendChild(m(k[0]));
+        b.addEventListener("click",function(){ etat.m=k[0]; Array.prototype.forEach.call(nv.children,function(o){ o.setAttribute("aria-pressed",String(o===b)); }); });
+        nv.appendChild(b);
+      });
+      l.appendChild(nv);
+    }
+    q.appendChild(l); body.appendChild(q);
+  }
+
+  // Ajouter : trois écrans
+  $("btn-add").addEventListener("click",function(){
+    var passes={}, scenes=SCENES.map(function(){ return {m:"o"}; }), axes=AXES.map(function(){ return {m:"a"}; });
+    ouvrir("add", [
+      {label:"Ta vie", title:"Lesquels de ces passages as-tu vécus ?", render:function rendu(body, focus){
+        body.textContent=""; var c=el("div","chips");
+        PASSAGES.forEach(function(p,i){
+          var b=btn("chip",null,p in passes); b.appendChild(document.createTextNode(p));
+          if(p in passes){ var an=el("input"); an.type="number"; an.inputMode="numeric"; an.placeholder="Année"; an.id="p-"+i; an.setAttribute("aria-label","Année de : "+p); an.value=passes[p];
+            an.addEventListener("click",function(e){ e.stopPropagation(); }); an.addEventListener("keydown",function(e){ e.stopPropagation(); }); an.addEventListener("input",function(){ passes[p]=an.value; }); b.appendChild(an); }
+          b.addEventListener("click",function(){ if(p in passes) delete passes[p]; else passes[p]=""; rendu(body,i); });
+          c.appendChild(b);
+        });
+        body.appendChild(c); body.appendChild(el("p","aide","L’année est facultative."));
+        if(focus!=null){ var cible=c.children[focus]; (cible.querySelector("input")||cible).focus(); }
+      }},
+      {label:"Ta vie", title:"Trois moments qui t’ont faite", render:function(body){
+        legende(body); SCENES.forEach(function(s,i){ question(body,"s"+i,s,scenes[i], i===2 ? "Tu peux passer cette question." : null); });
+      }},
+      {label:"Ta vie", title:"Ce qu’on regrette de ne pas avoir fait, toi tu l’as fait", render:function(body){
+        legende(body); AXES.forEach(function(a,i){ question(body,"x"+i,a[2],axes[i]); });
+      }}
+    ], "Ajouter à ma vie", function(){
+      var avant=T.length;
+      Object.keys(passes).forEach(function(p){ T.push({y:annee(passes[p]), t:p, x:"passage", m:"a"}); });
+      scenes.forEach(function(s){ if((s.t||"").trim()) T.push({y:annee(s.y), t:s.t.trim(), x:"scene", m:s.m}); });
+      axes.forEach(function(s,i){ if((s.t||"").trim()) T.push({y:annee(s.y), t:s.t.trim(), x:AXES[i][0], m:s.m}); });
+      var n=T.length-avant; if(!n) return;
+      T.sort(function(a,b){ return (a.y||9999)-(b.y||9999); }); dessiner();
+      toast(n>1 ? n+" moments ajoutés" : "Moment ajouté", T.length+" moments en tout");
+    });
+  });
+
+  // Faire le point : la carte, la météo, l'élan et une fierté
+  $("btn-point").addEventListener("click",function(){
+    var vals=STATS.map(function(x){ return x[1]; }), past=STATS.map(function(x){ return x[2]; }), mt=meteo, elan=1, fier={m:"b"};
+    function choix(box, labels, cur, set, row){
+      var w=el("div","opts"+(row?" row":""));
+      labels.forEach(function(l,i){ var b=btn("opt",l,i===cur); b.addEventListener("click",function(){ set(i); Array.prototype.forEach.call(w.children,function(o,j){ o.setAttribute("aria-pressed",String(j===i)); }); }); w.appendChild(b); });
+      box.appendChild(w);
+    }
+    ouvrir("point", [
+      {label:"Le point du mois", title:"Où en es-tu, domaine par domaine ?", render:function(body){
+        var duo=el("div","duo"), svg=document.createElementNS(NS,"svg"), col=el("div"); svg.setAttribute("class","radar"); svg.setAttribute("viewBox","-180 -112 360 224"); svg.setAttribute("aria-hidden","true");
+        function trace(){ radar(svg, vals, past); }
+        STATS.forEach(function(x,i){
+          var r=el("div","sl"), lb=el("label",null,x[0]), inp=el("input"), out=el("output",null,String(vals[i]));
+          inp.type="range"; inp.min=1; inp.max=10; inp.step=1; inp.value=vals[i]; inp.id="sl-"+i; lb.htmlFor=inp.id;
+          inp.addEventListener("input",function(){ vals[i]=+inp.value; out.textContent=inp.value; trace(); });
+          r.appendChild(lb); r.appendChild(inp); r.appendChild(out); col.appendChild(r);
+        });
+        duo.appendChild(svg); duo.appendChild(col); body.appendChild(duo); trace();
+      }},
+      {label:"Le point du mois", title:"Quel temps a-t-il fait en toi, ce mois-ci ?", render:function(body){ choix(body, METEOS.slice().reverse(), 5-mt, function(i){ mt=5-i; }); }},
+      {label:"Le point du mois", title:"Deux dernières choses", render:function(body){
+        var d=el("div","q"); d.appendChild(el("label",null,"Tu as de l’élan, en ce moment ?")); choix(d, ["Pas trop","Ça va","Oui"], elan, function(i){ elan=i; }, true); body.appendChild(d);
+        question(body,"fier","Une chose dont tu es contente ce mois-ci ?",fier,"Elle rejoindra ton parcours.",true);
+      }}
+    ], "Enregistrer mon point", function(){
+      STATS.forEach(function(x,i){ x[1]=vals[i]; }); meteo=mt;
+      if((fier.t||"").trim()) T.push({y:AN, t:fier.t.trim(), x:"bonheur", m:"b"});
+      dessiner(); toast("C’est noté","Ta page est à jour");
+    });
+  });
+
+  // Le parcours complet : pour le jour où on en a envie
+  $("btn-parcours").addEventListener("click",function(){
+    ouvrir("add", [{label:T.length+" moments", title:"Tout ton parcours", render:function(body){
+      var ans={}; T.forEach(function(e){ (ans[e.y||0]=ans[e.y||0]||[]).push(e); });
+      Object.keys(ans).map(Number).sort(function(a,b){ return (b||-1)-(a||-1); }).forEach(function(y){
+        var s=el("div","annee"); s.appendChild(el("b",null, y?String(y):"Un jour")); var ul=el("ul");
+        ans[y].slice().reverse().forEach(function(e){ var li=el("li"); li.appendChild(m(e.m)); var d=el("div"); d.appendChild(el("strong",null,e.t)); if(e.n) d.appendChild(el("span","petit","« "+e.n+" »")); li.appendChild(d); ul.appendChild(li); });
+        s.appendChild(ul); body.appendChild(s);
+      });
+    }}], "Fermer", null);
+  });
+})();
+</script>

@@ -7,11 +7,10 @@
 
 export const SCHEMA = 1;
 export const BASE = 'trophees-de-vie';
-export const BASE_DEMO = 'trophees-de-vie-demo';
 export const FORMAT = 'trophees-de-vie';
 
 // magasin → clé
-const MAGASINS = { trophees: 'id', passages: 'id', compteurs: 'id', points: 'mois', photos: 'id', reglages: 'cle' };
+const MAGASINS = { moments: 'id', points: 'mois', photos: 'id', reglages: 'cle' };
 
 /** Un identifiant au hasard. `randomUUID` n'existe pas hors contexte sécurisé. */
 export function idUnique() {
@@ -40,7 +39,7 @@ const versBlob = async (texte) => (await fetch(texte)).blob();
 
 /**
  * Ouvre la base et rend les quelques gestes dont l'app a besoin.
- * @param {string} nom  BASE pour les vraies données, BASE_DEMO pour la démonstration
+ * @param {string} nom  le nom de la base ; les essais en ouvrent d'autres pour ne pas toucher aux vraies données
  */
 export async function ouvrir(nom = BASE, { maintenant = () => new Date().toISOString() } = {}) {
   const ouverture = indexedDB.open(nom, SCHEMA);
@@ -138,20 +137,12 @@ export async function ouvrir(nom = BASE, { maintenant = () => new Date().toISOSt
       return ecrits;
     },
 
-    /** Remplit la base avec un jeu de données (la démonstration). */
-    async charger(donnees) {
-      for (const m of ['trophees', 'passages', 'compteurs', 'points']) {
-        for (const ligne of donnees[m] ?? []) await api.ecrire(m, ligne);
-      }
-      for (const [cle, valeur] of Object.entries(donnees.reglages ?? {})) await api.regler(cle, valeur);
-    },
-
     fermer: () => db.close(),
   };
   return api;
 }
 
-/** Efface une base entière. Sert à la démonstration et aux essais, jamais aux vraies données sans le demander. */
+/** Efface une base entière. Sert aux essais, jamais aux vraies données sans le demander. */
 export const effacer = (nom) => promesse(indexedDB.deleteDatabase(nom));
 
 /** Demande au navigateur de ne pas purger les données quand la place manque. */

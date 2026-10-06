@@ -6,7 +6,9 @@
   "scripts": {
     "test": "node --test",
     "essai-tests": "node tools/essai-tests.mjs",
-    "essai-stockage": "node tools/essai-stockage.mjs"
+    "essai-stockage": "node tools/essai-stockage.mjs",
+    "essai-page": "node tools/essai-page.mjs",
+    "polices": "node tools/polices.mjs"
   },
   "devDependencies": {
     "playwright": "1.63.0"

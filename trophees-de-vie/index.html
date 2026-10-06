@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trophées de vie</title>
+<meta name="description" content="Tout ce que tu as fait dans ta vie, sur une seule page.">
+<meta name="theme-color" content="#1F2A44">
+<link rel="icon" href="icone.svg" type="image/svg+xml">
+<link rel="preload" href="polices/bricolage.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/app.css?v=1">
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <div><p class="petit" id="today"></p><h1 id="hello">Bonjour</h1></div>
+    <div class="actions">
+      <button class="lien" id="btn-sauvegarde" type="button">Sauvegarde</button>
+      <button class="btn" id="btn-point" type="button">Faire le point</button>
+      <button class="btn main" id="btn-add" type="button">+ Ajouter</button>
+    </div>
+  </header>
+
+  <section class="sv p" aria-label="Souvenir du jour" id="sv"></section>
+
+  <section class="cv p" aria-label="En ce moment">
+    <svg class="radar" id="radar" viewBox="-180 -112 360 224" role="img" aria-label="Carte de vie sur huit domaines"></svg>
+    <p class="lab">En ce moment</p>
+    <p class="temps" id="temps"></p>
+    <p class="petit" id="synth"></p>
+  </section>
+
+  <section class="ax" aria-label="En chiffres" id="axes"></section>
+
+  <section class="rb p" aria-labelledby="rb-t">
+    <div class="rb-head"><h2 class="lab" id="rb-t">Ta vie d’un coup d’œil</h2><button class="lien" id="btn-parcours" type="button">Tout voir</button></div>
+    <div class="ruban" id="ruban"></div>
+    <div class="ans" id="ans" aria-hidden="true"></div>
+  </section>
+
+  <section class="hf p" aria-labelledby="hf-t">
+    <h2 class="lab" id="hf-t">Hauts faits</h2>
+    <ul id="feats"></ul>
+    <p class="petit" id="feats-vide" hidden>Épingle jusqu’à trois moments depuis « Tout voir ».</p>
+  </section>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <section class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="dlg-head"><div><p id="dlg-step"></p><h2 id="dlg-t"></h2></div><button class="x" id="dlg-x" type="button" aria-label="Fermer">×</button></div>
+    <div class="dlg-body" id="dlg-body"></div>
+    <div class="dlg-foot"><button class="btn" id="dlg-back" type="button">Retour</button><button class="btn main" id="dlg-next" type="button"></button></div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="js/app.js?v=1"></script>
+</body>
+</html>

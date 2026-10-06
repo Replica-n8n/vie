@@ -1,35 +1,57 @@
 # Trophées de vie
 
-Un tableau de bord personnel de tout ce qu'on a fait dans sa vie. PWA vanilla en
-modules JS, sans build, hors ligne, sans serveur : tout reste dans IndexedDB.
-Pour elle d'abord, partageable plus tard.
+Un tableau de bord personnel de tout ce qu'on a fait dans sa vie. Une page web
+vanilla en modules JS, sans build ni serveur, pensée comme page d'accueil du
+navigateur sur ordinateur : tout se lit sur un écran, sans défiler ni cliquer.
+Les données restent dans IndexedDB. Pour elle d'abord, partageable plus tard.
+Ce n'est plus une PWA (décidé le 2026-10-05).
 
 ## Principes à ne pas casser
 
-- Aucun trophée « verrouillé » n'est jamais affiché. `js/config/trophees.js` est
-  une banque de suggestions pour les formulaires, pas une liste à compléter.
-- Le niveau d'un trophée est choisi par la personne. Celui de la configuration
-  n'est qu'une proposition.
-- Les compteurs n'ont pas de paliers : ils affichent leur nombre.
-- Le platine est calculé (`platine()` dans `js/coeur.js`), jamais stocké.
-- La météo et les trois questions s'affichent en mots et en tendance, jamais en score.
-- Un mois sauté reste un trou dans la courbe, sans commentaire.
+- Tout se lit sur un écran d'ordinateur, sans défiler ni cliquer. Le détail (le
+  parcours complet) est derrière « Tout voir », jamais sur la page.
+- Rien n'est une liste à compléter : un passage non vécu n'apparaît nulle part,
+  il n'existe que comme proposition dans le formulaire.
+- Seuls les passages comptent, pas les durées ni les répétitions.
+- Le niveau (effort, cap, montagne) est choisi par la personne. Il se montre en
+  lunes : anneau, demi-lune, pleine lune en or doux. Pas de métal, pas de brillance,
+  pas de couleur vive sur le texte.
+- Aucun personnage fictif, aucune donnée d'exemple dans la page. La vie d'exemple
+  de `tests/exemple.js` ne sert qu'aux essais.
+- La météo s'affiche en mots, jamais en score. Un mois sauté ne se commente pas.
 - Une suppression est une marque (`supprimeLe`), jamais un effacement.
 - Textes en français, tutoiement, aucun vocabulaire médical, aucun tiret cadratin.
 
 ## Où sont les choses
 
-- `js/config/` : trophées proposés, domaines de la carte de vie, données de démo (Léa).
+- `index.html`, `css/app.css`, `js/app.js` : la page et ses trois volets
+  (ajouter, faire le point, tout voir) plus la sauvegarde.
+- `js/config/vie.js` : niveaux, passages, scènes, cinq axes. C'est le fichier à
+  modifier pour reformuler une question. Les sources sont citées dedans.
+- `js/config/domaines.js` : la carte de vie, la météo, l'élan.
 - `js/coeur.js` : toutes les règles, pures, datées par argument.
-- `js/stockage.js` : IndexedDB, sauvegarde et reprise, base de démo séparée.
-- `maquettes/v4.html` : la maquette validée (direction « verre vert »). C'est la
-  référence visuelle tant que l'écran réel n'existe pas.
+- `js/stockage.js` : IndexedDB, sauvegarde et reprise.
+- `polices/` : les polices hébergées ici (`npm run polices` pour les retélécharger).
+- `maquettes/` : l'historique de la recherche visuelle. `v8.src.html` est la
+  maquette dont la page est issue ; `captures/` est réécrit par `npm run essai-page`.
+
+## Pièges
+
+- GitHub Pages garde un fichier dix minutes. `index.html` appelle `app.css?v=N` et
+  `app.js?v=N` : monter N à chaque livraison. Les modules importés par `app.js`
+  ne portent pas ce numéro, donc après une livraison l'ancien et le nouveau peuvent
+  se mélanger pendant dix minutes.
+- `?base=nom` ouvre une autre base : c'est ce qui permet aux essais de ne jamais
+  toucher à la vraie.
 
 ## Contrôles
 
 - `npm test` : les règles et la configuration.
 - `npm run essai-tests` : abîme une règle à la fois, la suite doit tomber.
 - `npm run essai-stockage` : le stockage dans un vrai Chromium.
+- `npm run essai-page` : la vraie page de bout en bout (page vide, volets,
+  persistance, corrections, sauvegarde, trois tailles d'écran, contrastes mesurés
+  sur les pixels) et les captures.
 
 Les règles de la maison (maquette avant code, captures avant livraison, tendances
 de l'année, contrastes mesurés) sont dans la mémoire : `standards_apps_2026`,

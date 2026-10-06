@@ -1,89 +1,78 @@
-// Les règles de l'app, sans écran ni stockage : tout ce qui se calcule à partir
-// des trophées et des points du mois. Chaque fonction reçoit ses données et la
-// date du jour en argument, pour pouvoir être essayée à n'importe quelle date.
+// Les règles de la page, sans écran ni stockage : tout ce qui se calcule à partir
+// des moments et des points du mois. Chaque fonction reçoit ses données et la date
+// du jour en argument, pour pouvoir être essayée à n'importe quelle date.
 //
 // Formats : une date est 'AAAA-MM-JJ', un mois est 'AAAA-MM'.
 
 import { MOIS } from './config/domaines.js';
 
 /**
- * @typedef {object} Trophee
+ * @typedef {object} Moment
  * @property {string} id
- * @property {string|null} defId      le trophée proposé d'origine, ou null si perso
+ * @property {'passage'|'scene'|'axe'} genre
+ * @property {string|null} passage    l'identifiant du passage proposé, ou null s'il est écrit à la main
+ * @property {string|null} scene
+ * @property {string|null} axe        l'un des cinq axes, pour le genre 'axe'
  * @property {string} titre
- * @property {string} categorie
- * @property {'bronze'|'argent'|'or'} niveau
- * @property {number|null} annee      facultative : sans elle, le trophée va dans « Un jour »
+ * @property {'effort'|'cap'|'montagne'} niveau
+ * @property {number|null} annee      facultative : sans elle, le moment va dans « Un jour »
  * @property {string|null} date       'AAAA-MM-JJ', seulement si le jour est connu
  * @property {string} [note]
- * @property {string[]} [personnes]
- * @property {string|null} [photoId]
  * @property {boolean} [hautFait]
  * @property {boolean} [rappel]       false : ne ressort jamais en souvenir du jour
  * @property {string|null} [supprimeLe]
  *
- * @typedef {object} Passage          une étape d'un compteur (« 10e pays visité : le Japon »)
- * @property {string} id
- * @property {string} compteur
- * @property {number} rang
- * @property {string} [nom]
- * @property {number|null} annee
- * @property {string|null} date
- *
  * @typedef {object} Point            un « point du mois »
  * @property {string} mois            'AAAA-MM'
- * @property {Record<string, number>} roue   1 à 10 par domaine ; un domaine passé est absent
+ * @property {Record<string, number>} roue   1 à 10 par domaine
  * @property {number} meteo           1 à 5
- * @property {number} satisfaction    0 à 2
- * @property {number} sens
- * @property {number} energie
+ * @property {number} elan            0 à 2
  */
 
 const vivant = (x) => !x.supprimeLe;
 const vivants = (liste) => liste.filter(vivant);
 
-// ---------- Vitrine ----------
+// ---------- En chiffres ----------
 
-/** Les catégories où il y a au moins un trophée, dans l'ordre de la configuration. */
-export function categoriesCouvertes(trophees, categories) {
-  const vues = new Set(vivants(trophees).map((t) => t.categorie));
-  return categories.filter((c) => vues.has(c.id)).map((c) => c.id);
+/** Le total et le nombre de moments par niveau. */
+export function comptes(moments, niveaux) {
+  const actifs = vivants(moments);
+  const parNiveau = Object.fromEntries(niveaux.map((n) => [n.id, 0]));
+  for (const m of actifs) if (m.niveau in parNiveau) parNiveau[m.niveau] += 1;
+  return { total: actifs.length, ...parNiveau };
 }
 
-// Le moment d'un trophée, comparable par ordre alphabétique. Une année seule se
-// range avant tous les jours de cette année.
-const moment = (t) => t.date ?? (t.annee ? `${t.annee}-00-00` : null);
+/** Les moments de chaque axe, dans l'ordre de la configuration, du plus ancien au plus récent. */
+export function parAxe(moments, axes) {
+  const actifs = vivants(moments);
+  return axes.map((a) => ({ ...a, moments: actifs.filter((m) => m.genre === 'axe' && m.axe === a.id).sort(parTemps) }));
+}
+
+export const hautsFaits = (moments) => vivants(moments).filter((m) => m.hautFait).sort(parTemps).slice(0, 3);
+
+// Le moment d'un moment, comparable par ordre alphabétique. Une année seule se
+// range avant tous les jours de cette année, et « sans année » à la fin.
+const instant = (m) => m.date ?? (m.annee ? `${m.annee}-00-00` : '9999');
+function parTemps(a, b) { return instant(a).localeCompare(instant(b)); }
+
+// ---------- Ruban et parcours ----------
 
 /**
- * Le platine tombe quand chaque catégorie a son trophée. Il est daté du jour où
- * la dernière catégorie a été couverte ; si l'une d'elles n'a aucun trophée daté,
- * il reste sans date.
- * @returns {{annee:number|null, date:string|null}|null}
+ * Toutes les années, de la première à `anneeFin`, avec ce qui s'y est passé.
+ * Les années vides sont gardées : le ruban les montre. Ce qui n'a pas d'année
+ * va dans `sansDate`.
  */
-export function platine(trophees, categories) {
-  const actifs = vivants(trophees);
-  let dernier = '';
-  let datable = true;
-  for (const c of categories) {
-    const siens = actifs.filter((t) => t.categorie === c.id);
-    if (!siens.length) return null;
-    const moments = siens.map(moment).filter(Boolean).sort();
-    if (!moments.length) datable = false;
-    else if (moments[0] > dernier) dernier = moments[0];
-  }
-  if (!datable) return { annee: null, date: null };
-  return { annee: Number(dernier.slice(0, 4)), date: dernier.endsWith('-00-00') ? null : dernier };
+export function ruban(moments, anneeFin) {
+  const actifs = vivants(moments);
+  const dates = actifs.filter((m) => m.annee);
+  const sansDate = actifs.filter((m) => !m.annee);
+  if (!dates.length) return { debut: null, annees: [], sansDate };
+  const debut = Math.min(...dates.map((m) => m.annee));
+  const fin = Math.max(anneeFin, ...dates.map((m) => m.annee));
+  const annees = [];
+  for (let a = debut; a <= fin; a += 1) annees.push({ annee: a, moments: dates.filter((m) => m.annee === a).sort(parTemps) });
+  return { debut, annees, sansDate };
 }
-
-/** Le nombre de trophées par médaille. Le platine vaut 0 ou 1. */
-export function vitrine(trophees, categories) {
-  const v = { bronze: 0, argent: 0, or: 0, platine: 0 };
-  for (const t of vivants(trophees)) v[t.niveau] += 1;
-  if (platine(trophees, categories)) v.platine = 1;
-  return v;
-}
-
-export const hautsFaits = (trophees) => vivants(trophees).filter((t) => t.hautFait).slice(0, 3);
 
 // ---------- Souvenir du jour ----------
 
@@ -95,51 +84,18 @@ function tirageDuJour(jour) {
 }
 
 /**
- * Un trophée dont c'est l'anniversaire aujourd'hui, sinon un trophée au hasard.
- * Les trophées marqués `rappel: false` ne ressortent jamais.
- * @returns {{trophee:Trophee, ans:number|null}|null}
+ * Un moment dont c'est l'anniversaire aujourd'hui, sinon un moment au hasard.
+ * Ceux marqués `rappel: false` ne ressortent jamais.
+ * @returns {{moment:Moment, ans:number|null, anniversaire:boolean}|null}
  */
-export function souvenirDuJour(trophees, aujourdhui, tirage = tirageDuJour(aujourdhui)) {
-  const candidats = vivants(trophees).filter((t) => t.rappel !== false);
+export function souvenirDuJour(moments, aujourdhui, tirage = tirageDuJour(aujourdhui)) {
+  const candidats = vivants(moments).filter((m) => m.rappel !== false).sort(parTemps);
   if (!candidats.length) return null;
-  const anniversaires = candidats
-    .filter((t) => t.date && t.date.slice(5) === aujourdhui.slice(5) && t.date < aujourdhui)
-    .sort((a, b) => Number(Boolean(b.note)) - Number(Boolean(a.note)) || a.date.localeCompare(b.date));
-  if (anniversaires.length) {
-    const t = anniversaires[0];
-    return { trophee: t, ans: Number(aujourdhui.slice(0, 4)) - Number(t.date.slice(0, 4)) };
-  }
-  return { trophee: candidats[Math.min(candidats.length - 1, Math.floor(tirage * candidats.length))], ans: null };
-}
-
-// ---------- Parcours ----------
-
-/**
- * Toutes les années, de la première à `anneeFin`, avec ce qui s'y est passé.
- * Les années vides sont gardées : le ruban les montre. Ce qui n'a pas d'année
- * va dans `sansDate`.
- */
-export function parcours(trophees, passages, anneeFin, categories = [], defPlatine = null) {
-  const entrees = [
-    ...vivants(trophees).map((t) => ({ ...t, genre: 'trophee' })),
-    ...vivants(passages).map((p) => ({ ...p, genre: 'passage' })),
-  ];
-  const p = defPlatine && platine(trophees, categories);
-  if (p) entrees.push({ ...defPlatine, ...p, niveau: 'platine', genre: 'platine' });
-
-  const datees = entrees.filter((e) => e.annee);
-  const sansDate = entrees.filter((e) => !e.annee);
-  if (!datees.length) return { annees: [], sansDate };
-  const debut = Math.min(...datees.map((e) => e.annee));
-  const fin = Math.max(anneeFin, ...datees.map((e) => e.annee));
-  const annees = [];
-  for (let a = debut; a <= fin; a += 1) {
-    annees.push({
-      annee: a,
-      entrees: datees.filter((e) => e.annee === a).sort((x, y) => moment(x).localeCompare(moment(y))),
-    });
-  }
-  return { annees, sansDate };
+  const an = Number(aujourdhui.slice(0, 4));
+  const anniversaires = candidats.filter((m) => m.date && m.date.slice(5) === aujourdhui.slice(5) && m.date < aujourdhui);
+  if (anniversaires.length) return { moment: anniversaires[0], ans: an - Number(anniversaires[0].date.slice(0, 4)), anniversaire: true };
+  const m = candidats[Math.min(candidats.length - 1, Math.floor(tirage * candidats.length))];
+  return { moment: m, ans: m.annee ? an - m.annee : null, anniversaire: false };
 }
 
 // ---------- Carte de vie ----------
@@ -150,11 +106,9 @@ export function decalerMois(mois, n) {
   return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, '0')}`;
 }
 
-const parMois = (points) => [...points].sort((a, b) => a.mois.localeCompare(b.mois));
-
 /** Le dernier point posé, jusqu'à `mois` compris. */
 export function dernierPoint(points, mois) {
-  return parMois(points).filter((p) => p.mois <= mois).pop() ?? null;
+  return [...points].sort((a, b) => a.mois.localeCompare(b.mois)).filter((p) => p.mois <= mois).pop() ?? null;
 }
 
 /**
@@ -204,38 +158,3 @@ export function phraseRoue(actuel, avant, domaines) {
   }
   return phrases.join(' ');
 }
-
-// ---------- Météo et tendances ----------
-
-/** Les `n` derniers mois jusqu'à `mois`, un mois sauté restant un trou (null). */
-export function courbeMeteo(points, mois, n = 12) {
-  const connus = new Map(points.map((p) => [p.mois, p.meteo]));
-  const courbe = [];
-  for (let i = n - 1; i >= 0; i -= 1) {
-    const m = decalerMois(mois, -i);
-    courbe.push({ mois: m, meteo: connus.get(m) ?? null });
-  }
-  return courbe;
-}
-
-const moyenne = (xs) => xs.reduce((s, x) => s + x, 0) / xs.length;
-
-/**
- * La tendance d'une question : les 3 derniers mois contre les 3 d'avant.
- * @returns {'hausse'|'stable'|'baisse'|null} null tant qu'il n'y a rien à comparer
- */
-export function tendance(points, cle, mois, seuil = 0.34) {
-  const valeurs = (debut, fin) => points
-    .filter((p) => p.mois >= decalerMois(mois, debut) && p.mois <= decalerMois(mois, fin) && p[cle] != null)
-    .map((p) => p[cle]);
-  const recents = valeurs(-2, 0);
-  const anciens = valeurs(-5, -3);
-  if (!recents.length || !anciens.length) return null;
-  const ecart = moyenne(recents) - moyenne(anciens);
-  if (ecart >= seuil) return 'hausse';
-  if (ecart <= -seuil) return 'baisse';
-  return 'stable';
-}
-
-// Jamais un score : seulement des mots.
-export const MOTS_TENDANCE = { hausse: 'En hausse', stable: 'Stable', baisse: 'Un peu basse' };

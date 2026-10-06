@@ -6,17 +6,17 @@
 <script type="module">
 // Essai du stockage dans un vrai navigateur (IndexedDB n'existe pas dans Node).
 // Lancé par tools/essai-stockage.mjs, qui lit window.resultat.
-import { ouvrir, effacer, idUnique, BASE_DEMO } from '../js/stockage.js';
-import { DEMO } from '../js/config/demo.js';
-import { CATEGORIES } from '../js/config/trophees.js';
-import { vitrine } from '../js/coeur.js';
+import { ouvrir, effacer, idUnique, BASE } from '../js/stockage.js';
+import { NIVEAUX } from '../js/config/vie.js';
+import { comptes } from '../js/coeur.js';
+import { MOMENTS } from './exemple.js';
 
 const controles = [];
 const verifier = (nom, ok, detail = '') => controles.push({ nom, ok: Boolean(ok), detail: String(detail) });
 
 try {
   const A = 'essai-a', B = 'essai-b';
-  await effacer(A); await effacer(B); await effacer(BASE_DEMO);
+  await effacer(A); await effacer(B);
 
   // Une horloge qu'on avance à la main, pour décider de qui est le plus récent.
   let heure = 0;
@@ -25,20 +25,20 @@ try {
   const a = await ouvrir(A, { maintenant });
   verifier('un auteur est tiré au premier lancement', a.auteur && a.auteur.length >= 32, a.auteur);
 
-  const t = await a.ecrire('trophees', { titre: 'Permis', categorie: 'autonomie', niveau: 'bronze', annee: 2010, date: null });
-  verifier('un trophée reçoit un identifiant, deux dates et un auteur', t.id && t.creeLe && t.modifieLe && t.auteur === a.auteur, JSON.stringify(t));
+  const t = await a.ecrire('moments', { genre: 'passage', titre: 'Permis', niveau: 'effort', annee: 2010, date: null });
+  verifier('un moment reçoit un identifiant, deux dates et un auteur', t.id && t.creeLe && t.modifieLe && t.auteur === a.auteur, JSON.stringify(t));
   verifier('deux identifiants ne se ressemblent pas', idUnique() !== idUnique());
 
-  const modifie = await a.ecrire('trophees', { ...t, niveau: 'argent' });
+  const modifie = await a.ecrire('moments', { ...t, niveau: 'cap' });
   verifier('modifier garde la date de création et avance celle de modification', modifie.creeLe === t.creeLe && modifie.modifieLe > t.modifieLe);
-  verifier('modifier ne crée pas de doublon', (await a.tout('trophees')).length === 1);
+  verifier('modifier ne crée pas de doublon', (await a.tout('moments')).length === 1);
 
-  await a.retirer('trophees', t.id);
-  verifier('retirer cache le trophée', (await a.tout('trophees')).length === 0);
-  const marque = (await a.tout('trophees', { avecSupprimes: true }))[0];
+  await a.retirer('moments', t.id);
+  verifier('retirer cache le moment', (await a.tout('moments')).length === 0);
+  const marque = (await a.tout('moments', { avecSupprimes: true }))[0];
   verifier('retirer laisse une marque au lieu d’effacer', marque && marque.supprimeLe, JSON.stringify(marque));
-  await a.remettre('trophees', t.id);
-  verifier('remettre annule la suppression', (await a.tout('trophees')).length === 1);
+  await a.remettre('moments', t.id);
+  verifier('remettre annule la suppression', (await a.tout('moments')).length === 1);
 
   await a.ecrire('points', { mois: '2026-09', roue: { sante: 7 }, meteo: 4, satisfaction: 2, sens: 1, energie: 1 });
   await a.ecrire('points', { mois: '2026-09', roue: { sante: 8 }, meteo: 5, satisfaction: 2, sens: 1, energie: 1 });
@@ -56,18 +56,18 @@ try {
   // Reprise sur un autre appareil
   const b = await ouvrir(B, { maintenant });
   const ecrits = await b.importer(sauvegarde);
-  verifier('la sauvegarde se reprend sur un appareil vide', ecrits > 0 && (await b.tout('trophees'))[0].niveau === 'argent', ecrits);
+  verifier('la sauvegarde se reprend sur un appareil vide', ecrits > 0 && (await b.tout('moments'))[0].niveau === 'cap', ecrits);
   const reprise = await b.lire('photos', photo.id);
   verifier('la photo revient entière', reprise && (await reprise.donnees.text()) === 'image fictive' && reprise.donnees.type === 'image/jpeg');
   verifier('l’identité de l’appareil ne s’importe pas', b.auteur !== a.auteur && (await b.reglage('auteur')) === b.auteur);
   verifier('importer deux fois n’écrit rien de plus', (await b.importer(sauvegarde)) === 0);
 
   // Le plus récent gagne, dans les deux sens
-  await b.ecrire('trophees', { ...(await b.tout('trophees'))[0], niveau: 'or' });
+  await b.ecrire('moments', { ...(await b.tout('moments'))[0], niveau: 'montagne' });
   await b.importer(sauvegarde);
-  verifier('une sauvegarde ancienne n’écrase pas une modification plus récente', (await b.tout('trophees'))[0].niveau === 'or');
+  verifier('une sauvegarde ancienne n’écrase pas une modification plus récente', (await b.tout('moments'))[0].niveau === 'montagne');
   await a.importer(JSON.parse(JSON.stringify(await b.exporter())));
-  verifier('une sauvegarde récente remplace l’ancienne version', (await a.tout('trophees'))[0].niveau === 'or');
+  verifier('une sauvegarde récente remplace l’ancienne version', (await a.tout('moments'))[0].niveau === 'montagne');
 
   let refus = '';
   try { await b.importer({ format: 'autre' }); } catch (e) { refus = e.message; }
@@ -76,20 +76,20 @@ try {
   try { await b.importer({ format: 'trophees-de-vie', schema: 99, magasins: {} }); } catch (e) { refus = e.message; }
   verifier('une sauvegarde d’une version future est refusée', refus.includes('plus récente'), refus);
 
-  // La démonstration vit dans sa propre base
-  const demo = await ouvrir(BASE_DEMO, { maintenant });
-  await demo.charger(DEMO);
-  verifier('la démonstration donne la vitrine de Léa', JSON.stringify(vitrine(await demo.tout('trophees'), CATEGORIES)) === '{"bronze":5,"argent":10,"or":5,"platine":1}');
-  verifier('la démonstration ne touche pas aux vraies données', (await a.tout('trophees')).length === 1);
-  verifier('le prénom de la démonstration est réglé', (await demo.reglage('prenom')) === 'Léa');
+  // Une vie entière passe par la base sans rien perdre
+  const c = await ouvrir('essai-c', { maintenant });
+  for (const m of MOMENTS) await c.ecrire('moments', m);
+  verifier('une vie entière se relit avec les mêmes comptes', JSON.stringify(comptes(await c.tout('moments'), NIVEAUX)) === '{"total":22,"effort":6,"cap":11,"montagne":5}');
+  verifier('les essais ne touchent pas à la vraie base', !(await indexedDB.databases()).some((x) => x.name === BASE));
+  c.fermer(); await effacer('essai-c');
 
   // Ce qui est écrit survit à la fermeture
   a.fermer();
   const a2 = await ouvrir(A, { maintenant });
-  verifier('les données survivent à la fermeture, l’auteur aussi', (await a2.tout('trophees')).length === 1 && a2.auteur === a.auteur);
+  verifier('les données survivent à la fermeture, l’auteur aussi', (await a2.tout('moments')).length === 1 && a2.auteur === a.auteur);
 
-  a2.fermer(); b.fermer(); demo.fermer();
-  await effacer(A); await effacer(B); await effacer(BASE_DEMO);
+  a2.fermer(); b.fermer();
+  await effacer(A); await effacer(B);
 } catch (erreur) {
   verifier('aucune erreur inattendue', false, erreur.stack || erreur);
 }
