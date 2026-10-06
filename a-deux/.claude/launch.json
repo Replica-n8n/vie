@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "a-deux",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8103"],
+      "port": 8103
+    }
+  ]
+}

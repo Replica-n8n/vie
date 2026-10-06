@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Sonde calendrier · À deux</title>
+<!--
+  SONDE JETABLE, pas une partie de l'app.
+
+  Elle répond à une seule question, avant de dessiner la suite : qu'est-ce
+  que le Pixel fait VRAIMENT d'un rappel de calendrier envoyé par une PWA ?
+  Les sources se contredisent sur Google Agenda Android, et la décision
+  « rappel récurrent posé une fois » tient ou tombe là-dessus.
+
+  Quatre chemins, chacun avec un titre numéroté pour le retrouver et le
+  supprimer dans l'agenda :
+    1. fichier .ics, un seul événement, par Blob comme love-money
+    2. fichier .ics récurrent, chaque semaine, trois fois
+    3. lien Google Agenda qui porte la récurrence
+    4. partage Android du fichier récurrent (Web Share)
+
+  Les dates sont construites composant par composant, jamais par
+  toISOString : même règle que l'app.
+-->
+<style>
+  :root{--bg:#15111A;--surface:#201A26;--line:#3D3348;--text:#F5F0F7;--dim:#A99EB2;--rose:#F0709A;--menthe:#5FC9C0;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Roboto,sans-serif;
+       line-height:1.45;padding:calc(18px + env(safe-area-inset-top)) 16px 28px;max-width:480px;margin:0 auto;}
+  h1{font-size:1.15rem;font-weight:800;margin-bottom:6px;}
+  h1 em{font-style:normal;color:var(--rose);}
+  .quand{font-size:.82rem;color:var(--dim);margin-bottom:18px;}
+  .essai{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px;}
+  .essai button{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:10px 14px;
+       background:transparent;border:1px solid var(--rose);border-radius:12px;color:var(--text);
+       font:inherit;font-size:1rem;font-weight:700;text-align:left;cursor:pointer;}
+  .essai button:active{transform:scale(.98);}
+  .essai .n{flex:0 0 auto;width:28px;height:28px;border-radius:50%;background:var(--rose);color:#2A0C16;
+       display:flex;align-items:center;justify-content:center;font-weight:800;}
+  .essai p{font-size:.8rem;color:var(--dim);margin-top:8px;}
+  .essai .retour{color:var(--menthe);font-weight:600;}
+  .essai .retour:empty{display:none;}
+</style>
+</head>
+<body>
+
+<h1>Sonde <em>calendrier</em></h1>
+<p class="quand" id="quand"></p>
+
+<div class="essai">
+  <button type="button" id="b1"><span class="n">1</span>Fichier, un événement</button>
+  <p>Demain, toute la journée, avec un rappel la veille.</p>
+  <p class="retour" id="r1"></p>
+</div>
+
+<div class="essai">
+  <button type="button" id="b2"><span class="n">2</span>Fichier, chaque semaine</button>
+  <p>Demain à 18 h, puis deux semaines de suite.</p>
+  <p class="retour" id="r2"></p>
+</div>
+
+<div class="essai">
+  <button type="button" id="b3"><span class="n">3</span>Lien Google Agenda, chaque semaine</button>
+  <p>La même série, sans fichier. Demande le réseau.</p>
+  <p class="retour" id="r3"></p>
+</div>
+
+<div class="essai">
+  <button type="button" id="b4"><span class="n">4</span>Partager le fichier</button>
+  <p>La série du 2, par le menu de partage d'Android.</p>
+  <p class="retour" id="r4"></p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const deux = n => String(n).padStart(2, '0');
+
+  /* Demain et après-demain, en heure locale, composant par composant. */
+  const auj = new Date();
+  const dem = new Date(auj.getFullYear(), auj.getMonth(), auj.getDate() + 1);
+  const apres = new Date(auj.getFullYear(), auj.getMonth(), auj.getDate() + 2);
+  const compact = d => d.getFullYear() + deux(d.getMonth() + 1) + deux(d.getDate());
+
+  /* DTSTAMP est en UTC PAR DÉFINITION dans la norme : c'est le seul endroit
+     où lire l'heure UTC est juste, et on la lit champ par champ. */
+  const tampon = auj.getUTCFullYear() + deux(auj.getUTCMonth() + 1) + deux(auj.getUTCDate()) +
+    'T' + deux(auj.getUTCHours()) + deux(auj.getUTCMinutes()) + deux(auj.getUTCSeconds()) + 'Z';
+
+  const MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août',
+                'septembre','octobre','novembre','décembre'];
+  document.getElementById('quand').textContent =
+    'Les essais tombent demain, le ' + dem.getDate() + ' ' + MOIS[dem.getMonth()] +
+    '. Titres « Sonde À deux 1 » à « 4 », à supprimer ensuite.';
+
+  const uid = n => 'sonde-a-deux-' + n + '-' + compact(auj) + '-' +
+    Math.random().toString(36).slice(2, 8) + '@replica-n8n.github.io';
+
+  function calendrier(evenement) {
+    return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//A deux//Sonde//FR',
+            'CALSCALE:GREGORIAN', 'METHOD:PUBLISH']
+      .concat(evenement, ['END:VCALENDAR', '']).join('\r\n');
+  }
+
+  function icsSimple() {
+    return calendrier([
+      'BEGIN:VEVENT',
+      'UID:' + uid(1),
+      'DTSTAMP:' + tampon,
+      'DTSTART;VALUE=DATE:' + compact(dem),
+      'DTEND;VALUE=DATE:' + compact(apres),
+      'SUMMARY:Sonde À deux 1 · un événement',
+      'DESCRIPTION:Essai du fichier simple. À supprimer.',
+      'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY',
+      'DESCRIPTION:Sonde À deux 1', 'END:VALARM',
+      'END:VEVENT'
+    ]);
+  }
+
+  /* Heure FLOTTANTE, sans Z ni TZID : l'agenda la lit dans son propre fuseau.
+     Aucune conversion UTC, donc aucun décalage possible. */
+  function icsRecurrent(n) {
+    return calendrier([
+      'BEGIN:VEVENT',
+      'UID:' + uid(n),
+      'DTSTAMP:' + tampon,
+      'DTSTART:' + compact(dem) + 'T180000',
+      'DTEND:' + compact(dem) + 'T183000',
+      'RRULE:FREQ=WEEKLY;COUNT=3',
+      'SUMMARY:Sonde À deux ' + n + ' · chaque semaine',
+      'DESCRIPTION:Essai du fichier récurrent. À supprimer.',
+      'BEGIN:VALARM', 'TRIGGER:-PT1H', 'ACTION:DISPLAY',
+      'DESCRIPTION:Sonde À deux ' + n, 'END:VALARM',
+      'END:VEVENT'
+    ]);
+  }
+
+  /* Même mécanisme que love-money, à dessein : le résultat vaut pour l'app. */
+  function telecharger(texte, nom) {
+    const blob = new Blob([texte], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nom;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  const dire = (id, texte) => { document.getElementById(id).textContent = texte; };
+
+  document.getElementById('b1').addEventListener('click', () => {
+    telecharger(icsSimple(), 'sonde-a-deux-1.ics');
+    dire('r1', 'Fichier envoyé. Qu’est-ce que le téléphone propose ?');
+  });
+
+  document.getElementById('b2').addEventListener('click', () => {
+    telecharger(icsRecurrent(2), 'sonde-a-deux-2.ics');
+    dire('r2', 'Fichier envoyé. Combien d’événements apparaissent ?');
+  });
+
+  document.getElementById('b3').addEventListener('click', () => {
+    const p = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: 'Sonde À deux 3 · chaque semaine',
+      dates: compact(dem) + 'T180000/' + compact(dem) + 'T183000',
+      details: 'Essai du lien récurrent. À supprimer.',
+      recur: 'RRULE:FREQ=WEEKLY;COUNT=3'
+    });
+    location.href = 'https://calendar.google.com/calendar/render?' + p.toString();
+  });
+
+  document.getElementById('b4').addEventListener('click', async () => {
+    const fichier = new File([icsRecurrent(4)], 'sonde-a-deux-4.ics', { type: 'text/calendar' });
+    if (!navigator.canShare || !navigator.canShare({ files: [fichier] })) {
+      dire('r4', 'Ce navigateur refuse de partager ce type de fichier.');
+      return;
+    }
+    try {
+      await navigator.share({ files: [fichier], title: 'Sonde À deux 4' });
+      dire('r4', 'Partage ouvert. Google Agenda figurait-il dans la liste ?');
+    } catch (e) {
+      dire('r4', e && e.name === 'AbortError' ? 'Partage annulé.' : 'Partage refusé : ' + (e && e.name));
+    }
+  });
+
+  /* Exposé pour la vérification locale, sans effet sur le téléphone. */
+  window.SONDE = { icsSimple, icsRecurrent };
+})();
+</script>
+</body>
+</html>

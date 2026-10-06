@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Sonde calendrier 2 · À deux</title>
+<!--
+  SONDE JETABLE, pas une partie de l'app.
+
+  La sonde 1 (2026-09-10) a prouvé sur son Pixel qu'une série hebdomadaire de
+  trois occurrences s'importe en entier, et que Google Agenda jette les
+  VALARM. Il reste cinq points avant d'écrire les rappels de la tranche 5 :
+
+    1. une série SANS FIN
+    2. INTERVAL=7 (nuit ailleurs)  3. INTERVAL=30 (vacances)
+    4. reposer la même série (même UID, SEQUENCE:1, autre heure) :
+       mise à jour ou doublon ?
+    5. TRANSP:TRANSPARENT, et le lien de la description : ouvre-t-il l'app ?
+
+  Les points 1 et 5 vivent dans le même événement, le bouton 1.
+  Les lignes de plus de 75 octets sont repliées comme l'exige la norme, sans
+  couper un caractère accentué : l'app aura besoin de la même fonction.
+-->
+<style>
+  :root{--bg:#15111A;--surface:#201A26;--line:#3D3348;--text:#F5F0F7;--dim:#A99EB2;--rose:#F0709A;--menthe:#5FC9C0;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Roboto,sans-serif;
+       line-height:1.45;padding:calc(18px + env(safe-area-inset-top)) 16px 28px;max-width:480px;margin:0 auto;}
+  h1{font-size:1.15rem;font-weight:800;margin-bottom:6px;}
+  h1 em{font-style:normal;color:var(--rose);}
+  .quand{font-size:.82rem;color:var(--dim);margin-bottom:18px;}
+  .essai{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px;}
+  .essai button{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:10px 14px;
+       background:transparent;border:1px solid var(--rose);border-radius:12px;color:var(--text);
+       font:inherit;font-size:1rem;font-weight:700;text-align:left;cursor:pointer;}
+  .essai button:active{transform:scale(.98);}
+  .essai .n{flex:0 0 auto;width:28px;height:28px;border-radius:50%;background:var(--rose);color:#2A0C16;
+       display:flex;align-items:center;justify-content:center;font-weight:800;}
+  .essai p{font-size:.8rem;color:var(--dim);margin-top:8px;}
+  .essai .retour{color:var(--menthe);font-weight:600;}
+  .essai .retour:empty{display:none;}
+</style>
+</head>
+<body>
+
+<h1>Sonde <em>calendrier 2</em></h1>
+<p class="quand" id="quand"></p>
+
+<div class="essai">
+  <button type="button" id="b1"><span class="n">1</span>Chaque semaine, sans fin</button>
+  <p>Demain à 19 h, 15 minutes. Regarder : la répétition, « disponible » ou « occupé », et appuyer sur le lien de la description.</p>
+  <p class="retour" id="r1"></p>
+</div>
+
+<div class="essai">
+  <button type="button" id="b2"><span class="n">2</span>Toutes les 7 semaines</button>
+  <p>Demain à 19 h, trois fois. Le détail doit dire « toutes les 7 semaines ».</p>
+  <p class="retour" id="r2"></p>
+</div>
+
+<div class="essai">
+  <button type="button" id="b3"><span class="n">3</span>Toutes les 30 semaines</button>
+  <p>Demain à 19 h, deux fois. Le détail doit dire « toutes les 30 semaines ».</p>
+  <p class="retour" id="r3"></p>
+</div>
+
+<div class="essai">
+  <button type="button" id="b4"><span class="n">4</span>Reposer la série 1, à 20 h</button>
+  <p>APRÈS le 1. La série 1 passe-t-elle à 20 h, ou une deuxième série apparaît-elle ?</p>
+  <p class="retour" id="r4"></p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const deux = n => String(n).padStart(2, '0');
+  const auj = new Date();
+  const dem = new Date(auj.getFullYear(), auj.getMonth(), auj.getDate() + 1);
+  const compact = d => d.getFullYear() + deux(d.getMonth() + 1) + deux(d.getDate());
+
+  /* DTSTAMP est en UTC par définition : seul endroit où lire l'heure UTC est
+     juste. Les autres dates sont en heure flottante, sans conversion. */
+  const tampon = auj.getUTCFullYear() + deux(auj.getUTCMonth() + 1) + deux(auj.getUTCDate()) +
+    'T' + deux(auj.getUTCHours()) + deux(auj.getUTCMinutes()) + deux(auj.getUTCSeconds()) + 'Z';
+
+  const MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août',
+                'septembre','octobre','novembre','décembre'];
+  document.getElementById('quand').textContent =
+    'Tout tombe demain, le ' + dem.getDate() + ' ' + MOIS[dem.getMonth()] +
+    '. Titres « Sonde 2 · 1 » à « 4 ». Pour les supprimer : « tous les événements ».';
+
+  /* Le 4 réutilise EXPRÈS l'UID du 1 : c'est ce qu'on veut savoir. */
+  const UID_SERIE = 'sonde2-serie-' + compact(auj) + '@replica-n8n.github.io';
+  const APP = 'https://replica-n8n.github.io/a-deux/';
+
+  /* Replie une ligne à 75 octets UTF-8, suite préfixée d'une espace. Compter
+     en caractères couperait un « é » (2 octets) en plein milieu, et le
+     lecteur recevrait un caractère invalide. */
+  const encodeur = new TextEncoder();
+  function plier(ligne) {
+    const morceaux = [];
+    let courant = '', taille = 0, limite = 75;
+    for (const car of ligne) {
+      const n = encodeur.encode(car).length;
+      if (taille + n > limite) {
+        morceaux.push(courant);
+        courant = ''; taille = 0; limite = 74;   // la suite commence par une espace
+      }
+      courant += car; taille += n;
+    }
+    morceaux.push(courant);
+    return morceaux.join('\r\n ');
+  }
+
+  const echapper = t => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;')
+                                 .replace(/,/g, '\\,').replace(/\n/g, '\\n');
+
+  function calendrier(lignes) {
+    return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//A deux//Sonde 2//FR',
+            'CALSCALE:GREGORIAN', 'METHOD:PUBLISH']
+      .concat(lignes, ['END:VCALENDAR'])
+      .map(plier).join('\r\n') + '\r\n';
+  }
+
+  function evenement(o) {
+    return [
+      'BEGIN:VEVENT',
+      'UID:' + o.uid,
+      'SEQUENCE:' + (o.sequence || 0),
+      'DTSTAMP:' + tampon,
+      'DTSTART:' + compact(dem) + 'T' + o.heure + '0000',
+      'DTEND:' + compact(dem) + 'T' + o.heure + '1500',
+      'RRULE:' + o.regle,
+      'SUMMARY:' + echapper(o.titre),
+      'DESCRIPTION:' + echapper(o.description),
+      'TRANSP:TRANSPARENT',
+      'BEGIN:VALARM', 'TRIGGER:-PT30M', 'ACTION:DISPLAY',
+      'DESCRIPTION:' + echapper(o.titre), 'END:VALARM',
+      'END:VEVENT'
+    ];
+  }
+
+  const ESSAIS = {
+    1: () => evenement({ uid: UID_SERIE, heure: '19', regle: 'FREQ=WEEKLY',
+          titre: 'Sonde 2 · 1 · chaque semaine, sans fin',
+          description: 'Appuie sur ce lien pour voir s’il ouvre l’app installée : ' + APP }),
+    2: () => evenement({ uid: 'sonde2-7s-' + compact(auj) + '@replica-n8n.github.io', heure: '19',
+          regle: 'FREQ=WEEKLY;INTERVAL=7;COUNT=3',
+          titre: 'Sonde 2 · 2 · toutes les 7 semaines', description: 'Essai. À supprimer.' }),
+    3: () => evenement({ uid: 'sonde2-30s-' + compact(auj) + '@replica-n8n.github.io', heure: '19',
+          regle: 'FREQ=WEEKLY;INTERVAL=30;COUNT=2',
+          titre: 'Sonde 2 · 3 · toutes les 30 semaines', description: 'Essai. À supprimer.' }),
+    4: () => evenement({ uid: UID_SERIE, sequence: 1, heure: '20', regle: 'FREQ=WEEKLY',
+          titre: 'Sonde 2 · 4 · la série 1 reposée à 20 h',
+          description: 'Même UID que le 1. Mise à jour ou doublon ? ' + APP })
+  };
+
+  /* Même mécanisme que love-money et que la sonde 1 : Blob et lien. */
+  function telecharger(texte, nom) {
+    const blob = new Blob([texte], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nom;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  [1, 2, 3, 4].forEach(n => {
+    document.getElementById('b' + n).addEventListener('click', () => {
+      telecharger(calendrier(ESSAIS[n]()), 'sonde-2-' + n + '.ics');
+      document.getElementById('r' + n).textContent = 'Fichier envoyé.';
+    });
+  });
+
+  /* Exposé pour la vérification locale, sans effet sur le téléphone. */
+  window.SONDE2 = { texte: n => calendrier(ESSAIS[n]()), plier };
+})();
+</script>
+</body>
+</html>
