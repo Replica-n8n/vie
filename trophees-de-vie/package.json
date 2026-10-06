@@ -1,0 +1,14 @@
+{
+  "name": "trophees-de-vie",
+  "private": true,
+  "type": "module",
+  "description": "Un tableau de bord personnel de tout ce qu'on a fait dans sa vie. PWA vanilla, hors ligne, sans serveur.",
+  "scripts": {
+    "test": "node --test",
+    "essai-tests": "node tools/essai-tests.mjs",
+    "essai-stockage": "node tools/essai-stockage.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

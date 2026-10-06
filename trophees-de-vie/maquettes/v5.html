@@ -1,0 +1,481 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trophées de vie</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&display=swap">
+<style>
+/* Un tableau de bord qui se lit d'un coup d'oeil : tout tient sur un écran, sans rien ouvrir.
+   Verre vert : un ciel qui suit la météo du mois, des panneaux de verre arrondis, menthe et ambre. */
+:root{
+  --bg:#0B2A33; --surface:#12343B; --ink:#FFFFFF; --muted:#CFE9E4; --line:rgba(255,255,255,.26); --accent:#6EE7C8; --on-accent:#06231C;
+  --soft:#9CF6DE; --amber:#FFD27A; --on-amber:#2A1B00; --trait:rgba(255,255,255,.16);
+  --form:#0F3A40; --form2:#3B2F14; --verre:rgba(4,28,34,.5); --verre-opaque:#0F3138;
+  --l1:rgba(46,170,140,.95); --l2:rgba(205,150,55,.7); --l3:rgba(22,128,150,.95);
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",Verdana,system-ui,sans-serif;
+  --ease:cubic-bezier(.25,1,.5,1);
+  color-scheme:dark;
+}
+:root[data-meteo="5"]{ --l1:rgba(46,170,140,.98); --l2:rgba(215,160,60,.9) }
+:root[data-meteo="3"]{ --l1:rgba(46,160,140,.7); --l2:rgba(205,150,55,.38); --l3:rgba(22,128,150,.8) }
+:root[data-meteo="2"]{ --l1:rgba(50,120,125,.5); --l2:rgba(205,150,55,.12); --l3:rgba(30,100,130,.6) }
+:root[data-meteo="1"]{ --l1:rgba(45,90,110,.35); --l2:rgba(0,0,0,0); --l3:rgba(30,80,120,.5) }
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 var(--body)}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:
+  radial-gradient(120% 70% at 100% 0%,var(--l1) 0%,transparent 58%),
+  radial-gradient(90% 60% at 0% 48%,var(--l2) 0%,transparent 56%),
+  radial-gradient(120% 80% at 70% 100%,var(--l3) 0%,transparent 60%),var(--bg)}
+h1,h2,h3,p,ul{margin:0}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.giant{font-family:var(--display);font-weight:800;font-stretch:75%;line-height:.92;font-variant-numeric:tabular-nums}
+.lab{font:700 14px/1.1 var(--display);letter-spacing:.07em;text-transform:uppercase;color:var(--soft)}
+.petit{font-size:14px;color:var(--muted)}
+
+.page{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:14px 112px;display:grid;gap:12px;grid-template-columns:minmax(0,1fr);
+  grid-template-areas:"top" "sv" "ch" "ax" "rb" "cv" "hf"}
+.top{grid-area:top}.sv{grid-area:sv}.ch{grid-area:ch}.ax{grid-area:ax}.rb{grid-area:rb}.cv{grid-area:cv}.hf{grid-area:hf}
+.verre{background:var(--verre);-webkit-backdrop-filter:blur(26px) saturate(1.6);backdrop-filter:blur(26px) saturate(1.6);
+  border:1px solid rgba(255,255,255,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.28),0 12px 28px rgba(0,10,14,.3);border-radius:26px;padding:14px 16px;min-width:0}
+
+/* En-tête */
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+h1{font:800 clamp(38px,9vw,64px)/.92 var(--display);font-stretch:75%}
+.actions{display:flex;gap:8px}
+.btn{min-height:56px;padding:0 24px;border-radius:28px;border:1.5px solid rgba(255,255,255,.34);background:rgba(4,28,34,.55);font-weight:700;transition:border-radius .2s var(--ease),transform .2s var(--ease)}
+.btn:active{border-radius:14px;transform:scale(.98)}
+.btn.main{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+
+/* Médailles : une forme par métal */
+.halo{display:inline-grid;flex:none;filter:drop-shadow(0 0 7px rgba(255,255,255,.34))}
+.med{width:36px;height:36px;display:block}
+.med.b{border-radius:50%;background:radial-gradient(circle at 34% 28%,#F3C39B,#C97F4B 45%,#96552A)}
+.med.a{clip-path:polygon(50% 0,93.3% 25%,93.3% 75%,50% 100%,6.7% 75%,6.7% 25%);background:radial-gradient(circle at 34% 28%,#F2F5FA,#B5BECB 45%,#7C8696)}
+.med.o{clip-path:polygon(50% 0,64.9% 14%,85.4% 14.6%,86% 35.1%,100% 50%,86% 64.9%,85.4% 85.4%,64.9% 86%,50% 100%,35.1% 86%,14.6% 85.4%,14% 64.9%,0 50%,14% 35.1%,14.6% 14.6%,35.1% 14%);background:radial-gradient(circle at 34% 28%,#FFE99A,#E3B02C 45%,#B37F08)}
+.med.p{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);background:radial-gradient(circle at 40% 30%,#EAFBFF,#8ACDE2 45%,#3F8FAA)}
+.med.s26{width:26px;height:26px}.med.s12{width:12px;height:12px}.med.s44{width:44px;height:44px}
+
+/* Souvenir du jour */
+.sv{display:flex;gap:12px;align-items:center}
+.sv .t{font:700 clamp(18px,2.2vw,24px)/1.15 var(--display);text-wrap:balance}
+.sv .k{font-size:14px;color:var(--soft)}
+.sv .q{font-style:italic;margin-top:2px;display:none}
+
+/* Chiffres clés */
+.ch{display:grid;gap:10px}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.nums b{font-size:clamp(44px,6vw,64px);color:var(--accent);display:block}
+.nums span{font-size:14px;color:var(--muted)}
+.mets{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:10px;border-top:1px solid var(--trait)}
+.mets div{display:flex;align-items:center;gap:6px}
+.mets b{font-size:26px}
+.mets i{font-style:normal;font-size:14px;color:var(--muted);display:none}
+
+/* Les cinq axes */
+.ax{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.axe{padding:12px 6px;text-align:center;border-radius:22px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.axe b{font-size:clamp(36px,5vw,60px)}
+.axe .n{font:700 14px/1.15 var(--display)}
+.axe .n .long{display:none}
+.axe .pts{display:flex;gap:3px;flex-wrap:wrap;justify-content:center;min-height:12px}
+
+/* Ruban des années */
+.rb-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.lien{min-height:44px;padding:0 4px;border:0;background:none;color:var(--accent);font-weight:700;font-size:15px;text-decoration:underline;text-underline-offset:4px}
+.ruban{display:flex;align-items:flex-end;border-bottom:2px solid var(--line);height:58px;padding-bottom:5px}
+.an{flex:1 1 0;display:flex;flex-direction:column-reverse;align-items:center;gap:3px;min-width:0}
+.ans{display:flex;justify-content:space-between;font:700 14px/1 var(--display);color:var(--muted);margin-top:6px}
+
+/* En ce moment */
+.cv{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;align-items:center}
+.radar{display:block;width:100%;overflow:visible}
+.radar .grid{fill:none;stroke:var(--trait)}
+.radar .past{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:4 4}
+.radar .now{fill:var(--soft);fill-opacity:.28;stroke:var(--soft);stroke-width:2.5;stroke-linejoin:round}
+.radar text{fill:var(--ink);font:700 14px var(--display);display:none}
+.radar text tspan{fill:var(--soft)}
+.temps{font:800 clamp(28px,3.4vw,40px)/1 var(--display);font-stretch:75%;color:var(--amber);margin:4px 0}
+
+/* Hauts faits */
+.hf ul{list-style:none;padding:0;display:grid;gap:10px;margin-top:10px}
+.hf li{display:flex;gap:10px;align-items:center}
+.hf strong{display:block;line-height:1.2}
+
+/* Barre d'actions du téléphone : verre clair, sous le pouce */
+@media (max-width:759px){
+  .actions{position:fixed;z-index:10;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));padding:8px;border-radius:40px;
+    background:rgba(255,255,255,.2);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5);
+    border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 10px 30px rgba(0,10,14,.3)}
+  .actions .btn{flex:1;min-height:60px;border-radius:30px;padding:0 12px}
+  /* tout doit tenir au-dessus de la barre : les médailles par métal restent dans les axes */
+  .mets{display:none}
+  .page{gap:10px;padding-block:10px 112px}
+  .verre{padding:11px 14px}
+  h1{font-size:36px}
+  .axe{padding:10px 2px}
+  .rb-head{margin-bottom:0}
+}
+
+/* Ordinateur : la grille, tout sur un écran */
+@media (min-width:760px){
+  .page{padding-block:14px 14px;gap:14px;grid-template-columns:minmax(0,2fr) minmax(0,1fr);
+    grid-template-areas:"top top" "sv ch" "ax ax" "rb cv" "hf cv"}
+  .verre{padding:20px 22px;border-radius:30px}
+  .sv .q{display:block}
+  .mets{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;padding-top:8px}
+  .mets i{display:inline}
+  .nums b{font-size:52px}
+  .axe{padding:18px 10px}
+  .axe .n .long{display:inline}.axe .n .court{display:none}
+  .ax{gap:14px}
+  .ruban{height:84px}
+  .med.s12{width:15px;height:15px}
+  .cv{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;align-content:center}
+  .cv .radar{max-width:300px}
+  .radar text{display:block}
+  .hf ul{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (prefers-reduced-transparency:reduce){ .verre{background:var(--verre-opaque);-webkit-backdrop-filter:none;backdrop-filter:none} .actions{background:var(--surface)} }
+@media (prefers-contrast:more){ .verre{background:var(--verre-opaque);-webkit-backdrop-filter:none;backdrop-filter:none} .actions{background:var(--surface)} }
+
+/* Notification */
+.toast{position:fixed;z-index:50;top:calc(env(safe-area-inset-top,0px) + 16px);right:16px;left:16px;max-width:400px;margin-left:auto;background:#06231C;border:1px solid rgba(110,231,200,.5);
+  border-radius:999px;padding:10px 24px 10px 12px;display:flex;gap:12px;align-items:center;box-shadow:0 12px 32px rgba(0,10,14,.45);transform:translateY(-140%);opacity:0;transition:transform .3s var(--ease),opacity .3s}
+.toast.on{transform:none;opacity:1}
+.toast small{display:block;font-size:14px;color:var(--muted)}
+.toast strong{font-family:var(--display)}
+@media (max-width:759px){ .toast{top:auto;bottom:calc(108px + env(safe-area-inset-bottom,0px));transform:translateY(140%)} }
+
+/* Volets : des aplats pleins, pour ne pas les confondre avec le tableau de bord */
+.scrim{position:fixed;inset:0;z-index:30;background:rgba(2,12,16,.66);display:grid;align-items:end;justify-items:center}
+.dlg{--surface:rgba(255,255,255,.1);background:var(--form);width:100%;max-width:560px;max-height:92dvh;border-radius:28px 28px 0 0;display:flex;flex-direction:column;overflow:hidden}
+.dlg[data-kind="point"]{--accent:var(--amber);--on-accent:var(--on-amber);--form:var(--form2)}
+@media (min-width:760px){ .scrim{align-items:center} .dlg{border-radius:28px;max-height:88dvh} }
+.dlg-head{background:var(--accent);color:var(--on-accent);padding:18px 20px 14px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.dlg-head h2{font:700 24px/1.15 var(--display);text-wrap:balance}
+.dlg-head p{font-size:14px}
+.x{flex:none;width:44px;height:44px;border-radius:50%;border:1.5px solid currentColor;background:none;font-size:20px;line-height:1}
+.dlg-body{overflow-y:auto;padding:16px 20px 24px;flex:1;display:flex;flex-direction:column;gap:14px}
+.dlg-foot{padding:12px 20px calc(16px + env(safe-area-inset-bottom,0px));background:rgba(0,0,0,.22);display:flex;gap:8px}
+.dlg-foot .btn{min-height:60px;border-radius:30px}
+.dlg-foot .btn.main{flex:1}
+.dlg ::placeholder{color:var(--muted);opacity:1}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:46px;max-width:100%;padding:8px 16px;line-height:1.2;text-align:left;border-radius:23px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;display:flex;align-items:center;gap:8px;transition:border-radius .2s var(--ease)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);border-radius:12px}
+.chip input{width:74px;min-height:34px;border-radius:9px;border:1.5px solid var(--on-accent);background:transparent;color:var(--on-accent);padding:0 8px;font-weight:700}
+.chip input::placeholder{color:var(--on-accent) !important;opacity:.75 !important}
+.q{display:grid;gap:6px}
+.q label{font-weight:700;line-height:1.25}
+.q .ligne{display:flex;gap:8px}
+.field{min-height:50px;min-width:0;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);padding:0 14px;flex:1}
+.field.an-in{flex:0 0 92px}
+.aide{font-size:14px;color:var(--muted)}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.sl{display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:0 12px;align-items:center}
+.sl label{grid-column:1 / -1;font-weight:700}
+.sl input{width:100%;height:44px;accent-color:var(--accent);margin:0}
+.sl output{font-size:30px;text-align:right}
+.mini{background:rgba(0,0,0,.28);border-radius:20px;padding:12px}
+.mini .radar{max-width:200px;margin:0 auto}
+.mini .radar text{display:block}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opts.row{flex-direction:row}
+.opt{min-height:54px;padding:0 18px;border-radius:27px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;text-align:left;display:flex;align-items:center;justify-content:space-between;flex:1;transition:border-radius .2s var(--ease)}
+.opts.row .opt{justify-content:center;padding:0 6px}
+.opt[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);border-radius:14px}
+.annee{display:grid;grid-template-columns:76px minmax(0,1fr);gap:4px 12px;padding-top:12px;border-top:1px solid var(--trait)}
+.annee:first-child{border-top:0;padding-top:0}
+.annee > b{font-size:34px;color:var(--accent)}
+.annee ul{list-style:none;padding:0;display:grid;gap:10px}
+.annee li{display:flex;gap:10px;align-items:flex-start}
+.annee strong{display:block;line-height:1.2}
+@media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+</style>
+
+<div class="page">
+  <header class="top">
+    <div><p class="petit" id="today" style="color:var(--ink)"></p><h1 id="hello">Bonjour Léa</h1></div>
+    <div class="actions">
+      <button class="btn" id="btn-point" type="button">Faire le point</button>
+      <button class="btn main" id="btn-add" type="button">+ Ajouter</button>
+    </div>
+  </header>
+
+  <section class="sv verre" aria-label="Souvenir du jour" id="sv"></section>
+
+  <section class="ch verre" aria-label="En chiffres">
+    <div class="nums" id="nums"></div>
+    <div class="mets" id="mets"></div>
+  </section>
+
+  <section class="ax" aria-label="Ce qui compte" id="axes"></section>
+
+  <section class="rb verre" aria-labelledby="rb-t">
+    <div class="rb-head"><h2 class="lab" id="rb-t">Ta vie d’un coup d’œil</h2><button class="lien" id="btn-parcours" type="button">Tout voir</button></div>
+    <div class="ruban" id="ruban"></div>
+    <div class="ans" id="ans" aria-hidden="true"></div>
+  </section>
+
+  <section class="cv verre" aria-label="En ce moment">
+    <svg class="radar" id="radar" viewBox="-128 -118 256 236" role="img" aria-label="Carte de vie sur huit domaines, aujourd’hui et il y a trois mois"></svg>
+    <div>
+      <p class="lab">En ce moment</p>
+      <p class="temps" id="temps"></p>
+      <p class="petit" id="synth"></p>
+    </div>
+  </section>
+
+  <section class="hf verre" aria-labelledby="hf-t">
+    <h2 class="lab" id="hf-t">Hauts faits</h2>
+    <ul id="feats"></ul>
+  </section>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <section class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="dlg-head"><div><p id="dlg-step"></p><h2 id="dlg-t"></h2></div><button class="x" id="dlg-x" type="button" aria-label="Fermer">×</button></div>
+    <div class="dlg-body" id="dlg-body"></div>
+    <div class="dlg-foot"><button class="btn" id="dlg-back" type="button">Retour</button><button class="btn main" id="dlg-next" type="button"></button></div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var NOW = new Date(2026, 9, 3); // date figée pour la maquette
+  var MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  var JOURS = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+  var MOTS = {o:["montagne","montagnes"], a:["cap","caps"], b:["effort","efforts"], p:["platine","platine"]};
+
+  // Les cinq axes : les cinq regrets recueillis par Bronnie Ware, retournés en ce qu'on a fait.
+  var AXES = [
+    {id:"vivre", court:"Choisir", long:"Vivre ma vie à moi", q:"Un choix fait pour toi, contre ce qu’on attendait de toi ?"},
+    {id:"hors", court:"Souffler", long:"Vivre hors du travail", q:"Un moment où ta vie est passée avant le travail ?"},
+    {id:"dire", court:"Dire", long:"Dire ce que je ressens", q:"Une chose difficile que tu as osé dire à quelqu’un ?"},
+    {id:"amis", court:"Amis", long:"Garder mes amis", q:"Une amitié que tu as su garder ?"},
+    {id:"bonheur", court:"Joie", long:"M’autoriser le bonheur", q:"Une chose que tu t’es autorisée, juste pour le plaisir ?"}
+  ];
+  // Les passages : les grandes étapes qu'une vie compte (script de vie, Berntsen et Rubin).
+  var PASSAGES = ["Quitter la maison","Un diplôme","Premier emploi","Tomber amoureuse","Vivre en couple","Me marier","Avoir un enfant","Premier logement à moi","Permis de conduire"];
+  var SCENES = [["Ton plus beau moment ?","o"],["Un tournant dans ta vie ?","o"],["Le plus dur que tu as traversé ?","o"]];
+
+  // y année, d "MM-JJ", t titre, x axe (ou passage, scene), m médaille, n note, pin haut fait
+  var T = [
+    {y:2009, t:"Premier job d’été", x:"passage", m:"b"},
+    {y:2010, t:"Le bac", x:"passage", m:"b"},
+    {y:2010, t:"Permis de conduire", x:"passage", m:"a"},
+    {y:2012, t:"Partir seule à Lisbonne", x:"vivre", m:"a"},
+    {y:2014, t:"Licence de géographie", x:"passage", m:"a"},
+    {y:2015, t:"Master en urbanisme", x:"passage", m:"o", pin:1},
+    {y:2015, t:"Premier emploi", x:"passage", m:"b"},
+    {y:2017, t:"Premier logement à moi", x:"passage", m:"a"},
+    {y:2018, t:"Six mois à Montréal", x:"vivre", m:"o", pin:1},
+    {y:2019, t:"Apprendre à nager, à 27 ans", x:"hors", m:"a"},
+    {y:2020, t:"Tenir pendant le confinement", x:"scene", m:"a"},
+    {y:2020, t:"Épargne de secours", x:"passage", m:"a"},
+    {y:2021, t:"Demander de l’aide", x:"dire", m:"a"},
+    {y:2021, t:"Dire que je partais", x:"dire", m:"o", pin:1},
+    {y:2022, t:"Premier 10 km", x:"hors", m:"b"},
+    {y:2022, t:"Exposer mes photos", x:"bonheur", m:"a"},
+    {y:2023, t:"Marraine de Jeanne", x:"amis", m:"a"},
+    {y:2024, d:"10-03", t:"Mon premier semi-marathon, à Lyon", x:"hors", m:"o", n:"Maman m’attendait à l’arrivée. 2 h 07."},
+    {y:2025, t:"Vingt ans d’amitié avec Julie", x:"amis", m:"a"},
+    {y:2025, t:"M’offrir le Japon", x:"bonheur", m:"b"},
+    {y:2025, t:"Changer de métier", x:"vivre", m:"o"},
+    {y:2026, t:"Finir mon potager", x:"hors", m:"b"}
+  ];
+  var STATS = [["Santé","SAN",7,6],["Travail","TRA",8,8],["Argent","ARG",5,5],["Amour","AMO",6,4],["Proches","PRO",8,7],["Loisirs","LOI",6,6],["Évolution perso","ÉVO",7,7],["Cadre de vie","CAD",7,6]];
+  var NIVEAUX = ["Orageux","Nuageux","Variable","Éclaircies","Grand soleil"];
+  var meteo = 4;
+
+  var NS="http://www.w3.org/2000/svg";
+  function $(id){ return document.getElementById(id); }
+  function el(tag, cls, txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+  function btn(cls, txt, pressed){ var b=el("button",cls,txt); b.type="button"; if(pressed!=null) b.setAttribute("aria-pressed",String(pressed)); return b; }
+  function med(m, taille){ var h=el("span","halo"), s=el("span","med "+m+(taille?" "+taille:"")); h.setAttribute("aria-hidden","true"); h.appendChild(s); return h; }
+  function platine(){ return AXES.every(function(a){ return T.some(function(e){ return e.x===a.id; }); }); }
+
+  $("today").textContent = JOURS[NOW.getDay()]+" "+NOW.getDate()+" "+MOIS[NOW.getMonth()];
+  $("hello").textContent = (new Date().getHours()>=18 ? "Bonsoir" : "Bonjour")+" Léa";
+
+  function dessiner(){
+    // Souvenir du jour
+    var cle = ("0"+(NOW.getMonth()+1)).slice(-2)+"-"+("0"+NOW.getDate()).slice(-2);
+    var s = T.filter(function(e){ return e.d===cle; })[0] || T[T.length-1], ans = NOW.getFullYear()-s.y;
+    var sv=$("sv"); sv.textContent=""; sv.appendChild(med(s.m,"s44"));
+    var d=el("div"); d.appendChild(el("p","k", s.d===cle ? "Il y a "+ans+" an"+(ans>1?"s":"")+" aujourd’hui" : "Tu te souviens ? "+s.y));
+    d.appendChild(el("p","t",s.t)); if(s.n) d.appendChild(el("p","q","« "+s.n+" »")); sv.appendChild(d);
+
+    // Chiffres clés
+    var annees = T.filter(function(e){ return e.y; }).map(function(e){ return e.y; });
+    var debut = Math.min.apply(null, annees);
+    var nums=$("nums"); nums.textContent="";
+    [[T.length,"moments"],[T.filter(function(e){ return e.x==="passage"; }).length,"passages"],[NOW.getFullYear()-debut,"ans"]].forEach(function(n){
+      var c=el("div"); c.appendChild(el("b","giant",String(n[0]))); c.appendChild(el("span",null,n[1])); nums.appendChild(c);
+    });
+    var mets=$("mets"); mets.textContent="";
+    ["o","a","b","p"].forEach(function(m){
+      var n = m==="p" ? (platine()?1:0) : T.filter(function(e){ return e.m===m; }).length;
+      if(m==="p" && !n) return;
+      var c=el("div"); c.appendChild(med(m,"s26")); c.appendChild(el("b","giant",String(n))); c.appendChild(el("i",null,MOTS[m][n>1?1:0])); mets.appendChild(c);
+    });
+
+    // Les cinq axes
+    var ax=$("axes"); ax.textContent="";
+    AXES.forEach(function(a){
+      var siens=T.filter(function(e){ return e.x===a.id; }), c=el("div","axe verre");
+      c.appendChild(el("b","giant",String(siens.length)));
+      var n=el("span","n"); n.appendChild(el("span","court",a.court)); n.appendChild(el("span","long",a.long)); c.appendChild(n);
+      var p=el("span","pts"); siens.forEach(function(e){ p.appendChild(med(e.m,"s12")); }); c.appendChild(p);
+      ax.appendChild(c);
+    });
+
+    // Ruban : toutes les années visibles d'un coup, sans défilement
+    var rb=$("ruban"), lb=$("ans"); rb.textContent=""; lb.textContent="";
+    for(var y=debut;y<=NOW.getFullYear();y++){
+      var col=el("div","an"); T.filter(function(e){ return e.y===y; }).forEach(function(e){ col.appendChild(med(e.m,"s12")); }); rb.appendChild(col);
+    }
+    [debut, Math.round((debut+NOW.getFullYear())/2), NOW.getFullYear()].forEach(function(a){ lb.appendChild(el("span",null,String(a))); });
+
+    // Hauts faits
+    var f=$("feats"); f.textContent="";
+    T.filter(function(e){ return e.pin; }).slice(0,3).forEach(function(e){
+      var li=el("li"); li.appendChild(med(e.m)); var x=el("div"); x.appendChild(el("strong",null,e.t)); x.appendChild(el("span","petit",String(e.y||"un jour"))); li.appendChild(x); f.appendChild(li);
+    });
+
+    // En ce moment
+    radar($("radar"), STATS.map(function(s){ return s[2]; }), STATS.map(function(s){ return s[3]; }), true);
+    $("temps").textContent = NIVEAUX[meteo-1];
+    var up = STATS.filter(function(s){ return s[2]>s[3]; }).sort(function(a,b){ return (b[2]-b[3])-(a[2]-a[3]); }).map(function(s){ return s[0]; });
+    $("synth").textContent = up.length ? "▲ "+up.slice(0,3).join(", ") : "Tout tient bon";
+    document.documentElement.setAttribute("data-meteo", meteo);
+  }
+
+  function radar(svg, now, past, chiffres){
+    var R=78; svg.textContent="";
+    function pt(i,v){ var a=(-90+i*45)*Math.PI/180; return [(Math.cos(a)*R*v/10).toFixed(1),(Math.sin(a)*R*v/10).toFixed(1)]; }
+    function poly(vals,cls){ var p=document.createElementNS(NS,"polygon"); p.setAttribute("points",vals.map(function(v,i){ return pt(i,v).join(","); }).join(" ")); p.setAttribute("class",cls); svg.appendChild(p); }
+    [5,10].forEach(function(g){ poly(now.map(function(){ return g; }),"grid"); });
+    poly(past,"past"); poly(now,"now");
+    now.forEach(function(v,i){
+      var t=document.createElementNS(NS,"text"), l=pt(i,12.6); t.setAttribute("x",l[0]); t.setAttribute("y",l[1]); t.setAttribute("text-anchor","middle"); t.setAttribute("dominant-baseline","middle");
+      t.textContent=STATS[i][1]+(chiffres?" ":"");
+      if(chiffres){ var n=document.createElementNS(NS,"tspan"); n.textContent=v; t.appendChild(n); }
+      svg.appendChild(t);
+    });
+  }
+  dessiner();
+
+  var timer;
+  function toast(m, petit, fort){
+    var t=$("toast"); t.textContent=""; if(m) t.appendChild(med(m));
+    var d=el("div"); d.appendChild(el("small",null,petit)); d.appendChild(el("strong",null,fort)); t.appendChild(d);
+    t.style.paddingLeft = m ? "" : "24px"; t.classList.add("on"); clearTimeout(timer); timer=setTimeout(function(){ t.classList.remove("on"); }, 4200);
+  }
+
+  // Volet à étapes
+  var flow=null, ouvreur=null;
+  function ouvrir(kind, steps, fin, onDone){ $("scrim").firstElementChild.setAttribute("data-kind",kind); flow={steps:steps,i:0,fin:fin,onDone:onDone}; ouvreur=document.activeElement; $("scrim").hidden=false; etape(); }
+  function fermer(){ $("scrim").hidden=true; flow=null; if(ouvreur) ouvreur.focus(); }
+  function etape(){
+    var s=flow.steps[flow.i];
+    $("dlg-step").textContent = s.label+(flow.steps.length>1 ? " · "+(flow.i+1)+" sur "+flow.steps.length : "");
+    $("dlg-t").textContent=s.title; $("dlg-body").textContent=""; s.render($("dlg-body")); $("dlg-body").scrollTop=0;
+    $("dlg-back").hidden = flow.i===0;
+    $("dlg-next").textContent = flow.i===flow.steps.length-1 ? flow.fin : "Suivant";
+  }
+  $("dlg-next").addEventListener("click",function(){ if(flow.i<flow.steps.length-1){ flow.i++; etape(); } else { var f=flow.onDone; fermer(); if(f) f(); } });
+  $("dlg-back").addEventListener("click",function(){ flow.i--; etape(); });
+  $("dlg-x").addEventListener("click",fermer);
+  $("scrim").addEventListener("click",function(e){ if(e.target===this) fermer(); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && flow) fermer(); });
+
+  function annee(v){ v=+v; return v>=1940 && v<=NOW.getFullYear() ? v : null; }
+  function question(body, id, texte, etat, aide){
+    var q=el("div","q"), lb=el("label",null,texte), l=el("div","ligne"), tx=el("input","field"), an=el("input","field an-in");
+    tx.type="text"; tx.id="q-"+id; lb.htmlFor=tx.id; tx.placeholder="En quelques mots"; tx.value=etat.t||""; tx.addEventListener("input",function(){ etat.t=tx.value; });
+    an.type="number"; an.inputMode="numeric"; an.id="a-"+id; an.placeholder="Année"; an.setAttribute("aria-label","Année, facultative"); an.value=etat.y||""; an.addEventListener("input",function(){ etat.y=an.value; });
+    q.appendChild(lb); if(aide) q.appendChild(el("span","aide",aide)); l.appendChild(tx); l.appendChild(an); q.appendChild(l); body.appendChild(q);
+  }
+
+  // Ajouter : trois écrans, cinq minutes
+  $("btn-add").addEventListener("click",function(){
+    var passes={}, scenes=SCENES.map(function(){ return {}; }), axes=AXES.map(function(){ return {}; });
+    ouvrir("add", [
+      {label:"Ta vie", title:"Lesquels de ces passages as-tu vécus ?", render:function rendu(body, focus){
+        body.textContent=""; var c=el("div","chips");
+        PASSAGES.forEach(function(p,i){
+          var b=btn("chip",null,p in passes); b.appendChild(document.createTextNode(p));
+          if(p in passes){ var an=el("input"); an.type="number"; an.inputMode="numeric"; an.placeholder="Année"; an.id="p-"+i; an.setAttribute("aria-label","Année de : "+p); an.value=passes[p];
+            an.addEventListener("click",function(e){ e.stopPropagation(); }); an.addEventListener("input",function(){ passes[p]=an.value; }); b.appendChild(an); }
+          b.addEventListener("click",function(){ if(p in passes) delete passes[p]; else passes[p]=""; rendu(body,i); });
+          c.appendChild(b);
+        });
+        body.appendChild(c); body.appendChild(el("p","aide","L’année est facultative."));
+        if(focus!=null){ var cible=c.children[focus]; (cible.querySelector("input")||cible).focus(); }
+      }},
+      {label:"Ta vie", title:"Trois moments qui t’ont faite", render:function(body){
+        SCENES.forEach(function(s,i){ question(body,"s"+i,s[0],scenes[i], i===2 ? "Tu peux passer cette question." : null); });
+      }},
+      {label:"Ta vie", title:"Ce qu’on regrette de ne pas avoir fait, toi tu l’as fait", render:function(body){
+        AXES.forEach(function(a,i){ question(body,"x"+i,a.q,axes[i]); });
+      }}
+    ], "Ajouter à ma vie", function(){
+      var avant=T.length;
+      Object.keys(passes).forEach(function(p){ T.push({y:annee(passes[p]), t:p, x:"passage", m:"a"}); });
+      scenes.forEach(function(s){ if((s.t||"").trim()) T.push({y:annee(s.y), t:s.t.trim(), x:"scene", m:"o"}); });
+      axes.forEach(function(s,i){ if((s.t||"").trim()) T.push({y:annee(s.y), t:s.t.trim(), x:AXES[i].id, m:"a"}); });
+      var n=T.length-avant; if(!n) return;
+      T.sort(function(a,b){ return (a.y||9999)-(b.y||9999); }); dessiner();
+      toast("a", n>1 ? n+" moments ajoutés" : "Moment ajouté", n>1 ? "Ta vie s’étoffe" : T.filter(function(e){ return e; }).length+" moments en tout");
+    });
+  });
+
+  // Faire le point : la carte, la météo, l'élan et une fierté
+  $("btn-point").addEventListener("click",function(){
+    var vals=STATS.map(function(s){ return s[2]; }), past=STATS.map(function(s){ return s[3]; }), m=meteo, elan=1, fier={};
+    function choix(box, labels, cur, set, row){
+      var w=el("div","opts"+(row?" row":""));
+      labels.forEach(function(l,i){ var b=btn("opt",l,i===cur); b.addEventListener("click",function(){ set(i); Array.prototype.forEach.call(w.children,function(o,j){ o.setAttribute("aria-pressed",String(j===i)); }); }); w.appendChild(b); });
+      box.appendChild(w);
+    }
+    ouvrir("point", [
+      {label:"Le point du mois", title:"Où en es-tu, domaine par domaine ?", render:function(body){
+        var mini=el("div","mini"), svg=document.createElementNS(NS,"svg"); svg.setAttribute("class","radar"); svg.setAttribute("viewBox","-128 -118 256 236"); svg.setAttribute("aria-hidden","true");
+        mini.appendChild(svg); body.appendChild(mini); radar(svg, vals, past, false);
+        STATS.forEach(function(s,i){
+          var r=el("div","sl"), lb=el("label",null,s[0]), inp=el("input"), out=el("output","giant",String(vals[i]));
+          inp.type="range"; inp.min=1; inp.max=10; inp.step=1; inp.value=vals[i]; inp.id="sl-"+i; lb.htmlFor=inp.id;
+          inp.addEventListener("input",function(){ vals[i]=+inp.value; out.textContent=inp.value; radar(svg, vals, past, false); });
+          r.appendChild(lb); r.appendChild(inp); r.appendChild(out); body.appendChild(r);
+        });
+      }},
+      {label:"Le point du mois", title:"Quel temps a-t-il fait en toi, ce mois-ci ?", render:function(body){ choix(body, NIVEAUX.slice().reverse(), 5-m, function(i){ m=5-i; }); }},
+      {label:"Le point du mois", title:"Deux dernières choses", render:function(body){
+        var d=el("div","q"); d.appendChild(el("label",null,"Tu as de l’élan, en ce moment ?")); choix(d, ["Pas trop","Ça va","Oui"], elan, function(i){ elan=i; }, true); body.appendChild(d);
+        question(body,"fier","Une chose dont tu es contente ce mois-ci ?",fier,"Elle rejoindra ton parcours.");
+      }}
+    ], "Enregistrer mon point", function(){
+      STATS.forEach(function(s,i){ s[2]=vals[i]; }); meteo=m;
+      if((fier.t||"").trim()) T.push({y:annee(fier.y)||NOW.getFullYear(), t:fier.t.trim(), x:"bonheur", m:"b"});
+      dessiner(); toast(null,"C’est noté","Ta fiche est à jour");
+    });
+  });
+
+  // Le parcours complet : une page à part, pour le jour où on en a envie
+  $("btn-parcours").addEventListener("click",function(){
+    ouvrir("add", [{label:T.length+" moments", title:"Tout ton parcours", render:function(body){
+      var ans={}; T.forEach(function(e){ (ans[e.y||0]=ans[e.y||0]||[]).push(e); });
+      Object.keys(ans).map(Number).sort(function(a,b){ return (b||-1)-(a||-1); }).forEach(function(y){
+        var s=el("div","annee"); s.appendChild(el("b","giant", y?String(y):"Un jour")); var ul=el("ul");
+        ans[y].slice().reverse().forEach(function(e){ var li=el("li"); li.appendChild(med(e.m,"s26")); var d=el("div"); d.appendChild(el("strong",null,e.t)); if(e.n) d.appendChild(el("span","petit","« "+e.n+" »")); li.appendChild(d); ul.appendChild(li); });
+        s.appendChild(ul); body.appendChild(s);
+      });
+    }}], "Fermer", null);
+  });
+})();
+</script>

@@ -1,0 +1,433 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trophées de vie</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+/* Mise en page : une fiche de personnage. En haut, la vie d'un coup d'oeil (ruban des années).
+   Dessous, deux colonnes : la fiche sombre (vitrine, hauts faits, carte de vie, météo) et le journal clair. */
+:root{
+  --bg:#ECEEF6; --surface:#FFFFFF; --ink:#1D1A3D; --muted:#5D5A7E; --line:#D3D6E6; --accent:#4B3FD1;
+  --panel:#1D1A3D; --panel-ink:#F1F0FA; --panel-muted:#BDBAE0; --panel-line:#3B3770; --panel-accent:#ABA4FF;
+  --hero:#4B3FD1; --hero-ink:#FFFFFF; --hero-soft:#DDD9FF;
+  --weather:#2A7886; --weather-fill:rgba(42,120,134,.14);
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",Verdana,system-ui,sans-serif;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#100E24; --surface:#1A1838; --ink:#ECEBFA; --muted:#A9A6CE; --line:#34315F; --accent:#A39BFF;
+  --panel:#262258; --panel-ink:#F1F0FA; --panel-muted:#BDBAE0; --panel-line:#45418A; --panel-accent:#B6B0FF;
+  --hero:#3D33B8; --hero-ink:#FFFFFF; --hero-soft:#DDD9FF;
+  --weather:#6CC3CF; --weather-fill:rgba(108,195,207,.16); color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#100E24; --surface:#1A1838; --ink:#ECEBFA; --muted:#A9A6CE; --line:#34315F; --accent:#A39BFF;
+  --panel:#262258; --panel-ink:#F1F0FA; --panel-muted:#BDBAE0; --panel-line:#45418A; --panel-accent:#B6B0FF;
+  --hero:#3D33B8; --hero-ink:#FFFFFF; --hero-soft:#DDD9FF;
+  --weather:#6CC3CF; --weather-fill:rgba(108,195,207,.16); color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);margin:0}
+.page{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:24px 120px;display:flex;flex-direction:column;gap:var(--s5)}
+h1,h2,h3,p{margin:0}
+h1{font:800 clamp(30px,6vw,44px)/1.05 var(--display);letter-spacing:-.02em}
+h2{font:700 20px/1.2 var(--display)}
+.sub{color:var(--muted);font-size:14px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:6px}
+.num{font-variant-numeric:tabular-nums}
+
+/* En-tête */
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:var(--s4);flex-wrap:wrap}
+.actions{display:flex;gap:var(--s2)}
+.btn{min-height:48px;padding:0 20px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-weight:700}
+.btn.main{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+
+/* Souvenir du jour */
+.hero{background:var(--hero);color:var(--hero-ink);border-radius:20px;padding:var(--s5);display:flex;gap:var(--s4);align-items:center}
+.hero .when{color:var(--hero-soft);font-size:14px}
+.hero h2{font-size:clamp(22px,4vw,28px);text-wrap:balance}
+.hero blockquote{margin:var(--s2) 0 0;font-style:italic;max-width:60ch}
+.hero .who{color:var(--hero-soft);font-size:14px;margin-top:var(--s1)}
+
+/* Médailles : objets réels, couleurs fixes dans les deux thèmes */
+.med{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:800 15px/1 var(--display);
+  box-shadow:inset 0 -3px 5px rgba(0,0,0,.22),inset 0 2px 3px rgba(255,255,255,.55),0 1px 2px rgba(0,0,0,.25)}
+.med.b{background:radial-gradient(circle at 35% 30%,#E3A574,#B06A3B);color:#3E1F0B}
+.med.a{background:radial-gradient(circle at 35% 30%,#DDE3EC,#8C96A6);color:#262D38}
+.med.o{background:radial-gradient(circle at 35% 30%,#F6D46A,#C99312);color:#3F2D00}
+.med.p{background:radial-gradient(circle at 35% 30%,#CFF1FA,#5AA9C2);color:#0C3542}
+.med.c{background:transparent;border:2.5px solid var(--accent);color:var(--accent);box-shadow:none}
+.med.big{width:64px;height:64px;font-size:26px}
+.med.dot{width:16px;height:16px;font-size:0;box-shadow:inset 0 -2px 3px rgba(0,0,0,.2),inset 0 1px 2px rgba(255,255,255,.5)}
+.med.dot.c{border-width:2px;box-shadow:none}
+
+/* Ruban des années */
+.ribbon-wrap{background:var(--surface);border-radius:20px;padding:var(--s5) var(--s4) var(--s3)}
+.ribbon-head{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s3);flex-wrap:wrap;padding-inline:var(--s2);margin-bottom:var(--s4)}
+.ribbon{display:flex;overflow-x:auto;padding-bottom:var(--s2);scrollbar-width:thin}
+.yr{flex:1 0 46px;min-height:116px;border:0;background:none;border-radius:12px;padding:6px 0;
+  display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}
+.yr .stack{display:flex;flex-direction:column-reverse;align-items:center;gap:4px;min-height:56px;justify-content:flex-start}
+.yr .lbl{font:700 14px/1 var(--display);color:var(--muted);padding-top:8px;border-top:2px solid var(--line);width:100%;text-align:center}
+.yr.empty .lbl{font-weight:500;opacity:.75}
+.yr[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.yr[aria-pressed="true"] .lbl{color:var(--accent);border-top-color:var(--accent)}
+.chip{min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--line);background:none;font-size:14px;font-weight:700}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+
+/* Deux colonnes */
+.cols{display:grid;gap:var(--s5);grid-template-columns:minmax(0,1fr)}
+@media (min-width:920px){ .cols{grid-template-columns:372px minmax(0,1fr);align-items:start} }
+.left{display:flex;flex-direction:column;gap:var(--s5);min-width:0}
+
+/* La fiche (panneau sombre) */
+.sheet{background:var(--panel);color:var(--panel-ink);border-radius:20px;padding:var(--s5);display:flex;flex-direction:column;gap:var(--s5)}
+.sheet .sub{color:var(--panel-muted)}
+.sheet h3{font:700 14px/1.2 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--panel-muted);margin-bottom:var(--s3)}
+.vitrine{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s2);text-align:center}
+.vitrine div{display:flex;flex-direction:column;align-items:center;gap:6px}
+.vitrine b{font:800 28px/1 var(--display)}
+.vitrine span{font-size:14px;color:var(--panel-muted)}
+.cats{font-size:14px;color:var(--panel-muted);margin-top:var(--s3);text-align:center}
+.feats{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--s3)}
+.feats li{display:flex;gap:var(--s3);align-items:center}
+.feats strong{display:block;line-height:1.25}
+.feats small{font-size:14px;color:var(--panel-muted)}
+.sep{border:0;border-top:1px solid var(--panel-line);margin:0}
+
+.radar{display:block;width:100%;max-width:300px;margin:0 auto}
+.radar .grid{fill:none;stroke:var(--panel-line);stroke-width:1}
+.radar .past{fill:none;stroke:var(--panel-muted);stroke-width:1.5;stroke-dasharray:4 4}
+.radar .now{fill:var(--panel-accent);fill-opacity:.28;stroke:var(--panel-accent);stroke-width:2.5;stroke-linejoin:round}
+.radar .pt{fill:var(--panel-accent)}
+.radar text{fill:var(--panel-ink);font:700 14px var(--display);letter-spacing:.04em}
+.stats{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:8px 10px;align-items:center;margin:var(--s4) 0 0;padding:0;list-style:none}
+.stats li{display:contents}
+.stats .nm{font-size:15px;white-space:nowrap}
+.stats .bar{height:8px;border-radius:4px;background:var(--panel-line);position:relative;min-width:40px}
+.stats .bar i{position:absolute;inset:0 auto 0 0;border-radius:4px;background:var(--panel-accent)}
+.stats .bar u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--panel-ink);opacity:.75}
+.stats .v{font:800 18px/1 var(--display);text-align:right}
+.stats .d{font-size:14px;color:var(--panel-muted);min-width:34px;text-align:right}
+.stats .d.up{color:var(--panel-accent);font-weight:700}
+.legend{font-size:14px;color:var(--panel-muted);margin-top:var(--s3)}
+.synth{margin-top:var(--s3);padding:var(--s3);border-radius:12px;background:var(--panel-line);font-size:15px}
+
+/* Météo */
+.box{background:var(--surface);border-radius:20px;padding:var(--s5)}
+.wx{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:var(--s3);margin-top:var(--s4)}
+.wx .ylab,.wx .plot{position:relative;height:150px;margin-block:10px}
+.wx .ylab{width:92px}
+.wx .ylab span{position:absolute;right:0;transform:translateY(-50%);font-size:14px;color:var(--muted);white-space:nowrap}
+.wx .plot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.wx .plot .gl{position:absolute;left:0;right:0;border-top:1px dashed var(--line)}
+.wx .plot .pt{position:absolute;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--surface);border:2.5px solid var(--weather)}
+.wx .plot .pt.last{background:var(--weather);width:14px;height:14px;margin:-7px 0 0 -7px}
+.wx .months{grid-column:2;margin-inline:-5.5px;display:flex;justify-content:space-between;font-size:14px;color:var(--muted)}
+.wx .months span{width:11px;text-align:center}
+.pills{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s3)}
+.pill{padding:6px 12px;border-radius:999px;font-size:14px;background:var(--weather-fill);color:var(--ink)}
+.trends{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3);margin:var(--s4) 0 0;padding:var(--s4) 0 0;border-top:1px solid var(--line)}
+.trends dt{font-size:14px;color:var(--muted)}
+.trends dd{margin:2px 0 0;font-weight:700}
+
+/* Journal */
+.journal{display:flex;flex-direction:column;gap:var(--s5);min-width:0}
+.counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--s4) var(--s5);margin:var(--s4) 0 0;padding:0;list-style:none}
+.counts li{border-left:3px solid var(--accent);padding-left:var(--s3)}
+.counts b{font:800 40px/1 var(--display);display:block}
+.counts .what{font-weight:700}
+.counts .more{font-size:14px;color:var(--muted)}
+.luck{margin-top:var(--s4);font-size:14px;color:var(--muted);border-top:1px dashed var(--line);padding-top:var(--s3)}
+.year{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s2) var(--s5);padding-top:var(--s5);border-top:1px solid var(--line)}
+.year:first-of-type{border-top:0;padding-top:var(--s2)}
+@media (min-width:620px){ .year{grid-template-columns:104px minmax(0,1fr)} }
+.year > .y{font:800 40px/1 var(--display);letter-spacing:-.02em;color:var(--accent)}
+.year > .y small{display:block;font:400 14px/1.3 var(--body);letter-spacing:0;color:var(--muted);margin-top:4px}
+.entries{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--s4)}
+.entries li{display:flex;gap:var(--s3);align-items:flex-start}
+.entries .t{font-weight:700;font-size:17px;line-height:1.25}
+.entries .m{font-size:14px;color:var(--muted)}
+.entries .n{font-style:italic;margin-top:2px;max-width:62ch}
+
+/* Notification de déblocage */
+.toast{position:fixed;z-index:20;top:calc(env(safe-area-inset-top,0px) + 16px);right:16px;left:16px;max-width:380px;margin-left:auto;
+  background:var(--panel);color:var(--panel-ink);border-radius:999px;padding:10px 22px 10px 10px;display:flex;gap:var(--s3);align-items:center;
+  box-shadow:0 12px 32px rgba(10,8,40,.35);transform:translateY(-140%);opacity:0;transition:transform .3s cubic-bezier(.25,1,.5,1),opacity .3s}
+.toast.on{transform:none;opacity:1}
+.toast small{display:block;font-size:14px;color:var(--panel-muted)}
+.toast strong{font-family:var(--display)}
+@media (prefers-reduced-motion:reduce){ .toast{transition:none} }
+
+/* Téléphone : les actions descendent sous le pouce */
+@media (max-width:720px){
+  .actions{position:fixed;z-index:10;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
+    background:color-mix(in srgb,var(--bg) 92%,transparent);border-top:1px solid var(--line)}
+  .actions .btn{flex:1;min-height:56px;padding:0 12px}
+  .hero{align-items:flex-start;padding:var(--s4)}
+  .med.big{width:48px;height:48px;font-size:20px}
+  .sheet,.box{padding:var(--s4)}
+}
+</style>
+
+<div class="page">
+  <header class="top">
+    <div>
+      <p class="sub" id="today"></p>
+      <h1>Bonjour Léa</h1>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btn-point" type="button">Faire le point</button>
+      <button class="btn main" id="btn-add" type="button">+ Ajouter</button>
+    </div>
+  </header>
+
+  <section class="hero" aria-labelledby="hero-t">
+    <span class="med big" id="hero-med"></span>
+    <div>
+      <p class="when" id="hero-when"></p>
+      <h2 id="hero-t"></h2>
+      <blockquote id="hero-n"></blockquote>
+      <p class="who" id="hero-who"></p>
+    </div>
+  </section>
+
+  <section class="ribbon-wrap" aria-labelledby="rib-t">
+    <div class="ribbon-head">
+      <div>
+        <h2 id="rib-t">Ta vie d’un coup d’œil</h2>
+        <p class="sub" id="rib-sub"></p>
+      </div>
+      <button class="chip" id="all" type="button" aria-pressed="true">Toute la vie</button>
+    </div>
+    <div class="ribbon" id="ribbon"></div>
+  </section>
+
+  <div class="cols">
+    <div class="left">
+      <section class="sheet" aria-label="Ta fiche">
+        <div>
+          <h3>Vitrine</h3>
+          <div class="vitrine" id="vitrine"></div>
+          <p class="cats" id="cats"></p>
+        </div>
+        <hr class="sep">
+        <div>
+          <h3>Hauts faits</h3>
+          <ul class="feats" id="feats"></ul>
+        </div>
+        <hr class="sep">
+        <div>
+          <h3>Carte de vie</h3>
+          <svg class="radar" id="radar" viewBox="-150 -140 300 280" role="img" aria-label="Carte de vie sur huit domaines, aujourd’hui et il y a trois mois"></svg>
+          <ul class="stats" id="stats"></ul>
+          <p class="legend">Trait blanc sur la jauge et pointillé sur la carte : il y a 3 mois.</p>
+          <p class="synth" id="synth"></p>
+        </div>
+      </section>
+
+      <section class="box" aria-labelledby="wx-t">
+        <h2 id="wx-t">Ta météo intérieure</h2>
+        <p class="sub">Un point par mois, sur un an</p>
+        <div class="pills"><span class="pill">Ce mois-ci : éclaircies</span><span class="pill">Plus beau temps depuis le printemps</span></div>
+        <div class="wx">
+          <div class="ylab" id="ylab" aria-hidden="true"></div>
+          <div class="plot" id="plot" role="img" aria-label="Courbe du moral d’octobre à septembre, de variable à éclaircies, avec un grand soleil en juillet"></div>
+          <div class="months" id="months" aria-hidden="true"></div>
+        </div>
+        <dl class="trends">
+          <div><dt>Satisfaction</dt><dd>En hausse</dd></div>
+          <div><dt>Sens</dt><dd>Stable</dd></div>
+          <div><dt>Énergie</dt><dd>Un peu basse</dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <div class="journal">
+      <section class="box" aria-labelledby="cnt-t">
+        <h2 id="cnt-t">Ce que ça fait, mis bout à bout</h2>
+        <ul class="counts">
+          <li><b class="num">10</b><span class="what">pays visités</span><br><span class="more">3 continents</span></li>
+          <li><b class="num">31</b><span class="what">livres lus</span><br><span class="more">environ 9 000 pages</span></li>
+          <li><b class="num">3</b><span class="what">amitiés de plus de 10 ans</span><br><span class="more">la plus ancienne : 21 ans, Julie</span></li>
+          <li><b class="num">9</b><span class="what">ans chez toi</span><br><span class="more">depuis mars 2017</span></li>
+        </ul>
+        <p class="luck">Emplacement de la ligne « ta chance » : elle n’apparaîtra que pour un chiffre dont on a la source.</p>
+      </section>
+
+      <section class="box" aria-labelledby="jr-t">
+        <h2 id="jr-t">Ton parcours</h2>
+        <p class="sub" id="jr-sub"></p>
+        <div id="years"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var NOW = new Date(2026, 9, 3); // date figée pour la maquette
+  var MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  var JOURS = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+  var NOMS = {b:"Bronze", a:"Argent", o:"Or", p:"Platine"};
+  var LETTRE = {b:"B", a:"A", o:"O", p:"P", c:"+"};
+
+  // y année, d "MM-JJ" (facultatif), t titre, c catégorie, m médaille (c = compteur), n note, w personnes, pin haut fait
+  var T = [
+    {y:2009, d:"07-06", t:"Premier job d’été", c:"Autonomie", m:"b", n:"Deux mois à la boulangerie. Mon premier salaire."},
+    {y:2010, d:"07-02", t:"Le bac", c:"Savoir", m:"b"},
+    {y:2010, t:"Permis de conduire", c:"Autonomie", m:"a", n:"Raté deux fois. La troisième, je tremblais encore."},
+    {y:2012, d:"04-18", t:"Premier voyage seule, à Lisbonne", c:"Aventure", m:"a"},
+    {y:2014, t:"Licence de géographie", c:"Savoir", m:"a"},
+    {y:2015, d:"09-25", t:"Master en urbanisme", c:"Savoir", m:"o", pin:1, n:"Le mémoire rendu à 4 h du matin."},
+    {y:2015, t:"Premier emploi", c:"Autonomie", m:"b"},
+    {y:2017, d:"03-11", t:"Premier logement à moi", c:"Autonomie", m:"a", n:"Trente mètres carrés et un balcon."},
+    {y:2018, d:"01-14", t:"Six mois à Montréal", c:"Aventure", m:"o", pin:1, n:"Moins 28 le jour de l’arrivée."},
+    {y:2019, t:"Apprendre à nager, à 27 ans", c:"Corps", m:"a"},
+    {y:2019, d:"08-09", t:"5e pays visité : l’Islande", c:"Pays visités", m:"c"},
+    {y:2020, t:"Tenir pendant le confinement", c:"Résilience", m:"a"},
+    {y:2020, d:"12-01", t:"Épargne de secours", c:"Autonomie", m:"a"},
+    {y:2021, t:"Me relever de ma rupture", c:"Résilience", m:"o", pin:1},
+    {y:2021, d:"05-20", t:"Demander de l’aide", c:"Résilience", m:"a", n:"Le coup de fil le plus dur à passer."},
+    {y:2022, d:"06-12", t:"Premier 10 km", c:"Corps", m:"b"},
+    {y:2022, d:"11-05", t:"Exposer mes photos", c:"Création", m:"a", w:"Julie, Karim"},
+    {y:2023, d:"02-19", t:"Marraine de Jeanne", c:"Liens", m:"a", w:"Camille, Jeanne"},
+    {y:2024, d:"10-03", t:"Mon premier semi-marathon, à Lyon", c:"Corps", m:"o", n:"J’ai cru abandonner au 15e km. Maman m’attendait à l’arrivée. 2 h 07.", w:"Maman"},
+    {y:2025, d:"04-22", t:"10e pays visité : le Japon", c:"Pays visités", m:"c"},
+    {y:2025, d:"09-01", t:"Changer de métier", c:"Autonomie", m:"o", n:"Dix ans dans un bureau, puis le terrain."},
+    {y:2026, d:"08-22", t:"Finir mon potager", c:"Création", m:"b"},
+    {y:2026, d:"08-22", t:"Touche-à-tout", c:"Un trophée dans chaque catégorie", m:"p"}
+  ];
+  var STATS = [ // nom, abréviation, aujourd'hui, il y a 3 mois
+    ["Santé","SAN",7,6],["Travail","TRA",8,8],["Argent","ARG",5,5],["Amour","AMO",6,4],
+    ["Proches","PRO",8,7],["Loisirs","LOI",6,6],["Évolution perso","ÉVO",7,7],["Cadre de vie","CAD",7,6]
+  ];
+  var METEO = [3,2,2,3,3,4,3,4,4,5,4,4]; // octobre à septembre
+  var NIVEAUX = ["Orageux","Nuageux","Variable","Éclaircies","Grand soleil"];
+
+  function $(id){ return document.getElementById(id); }
+  function el(tag, cls, txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+  function med(m, extra){ var s=el("span","med "+m+(extra?" "+extra:""), extra==="dot"?"":LETTRE[m]); s.setAttribute("aria-hidden","true"); return s; }
+  function dateTxt(e){ if(!e.d) return String(e.y); var p=e.d.split("-"); var j=+p[1]; return (j===1?"1er":j)+" "+MOIS[+p[0]-1]+" "+e.y; }
+
+  // En-tête
+  $("today").textContent = JOURS[NOW.getDay()]+" "+NOW.getDate()+" "+MOIS[NOW.getMonth()];
+
+  // Souvenir du jour : un trophée dont c'est l'anniversaire, sinon le premier noté
+  var key = ("0"+(NOW.getMonth()+1)).slice(-2)+"-"+("0"+NOW.getDate()).slice(-2);
+  var sv = T.filter(function(e){ return e.d===key && e.y<NOW.getFullYear(); })[0] || T.filter(function(e){ return e.n; })[0];
+  var ans = NOW.getFullYear()-sv.y;
+  $("hero-med").className = "med big "+sv.m; $("hero-med").textContent = LETTRE[sv.m]; $("hero-med").setAttribute("aria-hidden","true");
+  $("hero-when").textContent = sv.d===key ? "Il y a "+ans+" an"+(ans>1?"s":"")+" aujourd’hui" : "Tu te souviens ? "+sv.y;
+  $("hero-t").textContent = sv.t;
+  if(sv.n) $("hero-n").textContent = "« "+sv.n+" »"; else $("hero-n").hidden = true;
+  if(sv.w) $("hero-who").textContent = "Avec "+sv.w; else $("hero-who").hidden = true;
+
+  // Vitrine
+  var troph = T.filter(function(e){ return e.m!=="c"; });
+  ["b","a","o","p"].forEach(function(m){
+    var d=el("div"); d.appendChild(med(m));
+    d.appendChild(el("b","num", String(troph.filter(function(e){ return e.m===m; }).length)));
+    d.appendChild(el("span",null,NOMS[m])); $("vitrine").appendChild(d);
+  });
+  var cats = []; troph.forEach(function(e){ if(e.m!=="p" && cats.indexOf(e.c)<0) cats.push(e.c); });
+  $("cats").textContent = cats.join(" · ");
+
+  // Hauts faits
+  T.filter(function(e){ return e.pin; }).forEach(function(e){
+    var li=el("li"); li.appendChild(med(e.m));
+    var d=el("div"); d.appendChild(el("strong",null,e.t)); d.appendChild(el("small",null,e.c+" · "+e.y)); li.appendChild(d);
+    $("feats").appendChild(li);
+  });
+
+  // Carte de vie
+  var NS="http://www.w3.org/2000/svg", R=95, svg=$("radar");
+  function pt(i,v){ var a=(-90+i*45)*Math.PI/180; return [(Math.cos(a)*R*v/10).toFixed(1),(Math.sin(a)*R*v/10).toFixed(1)]; }
+  function poly(vals,cls){ var p=document.createElementNS(NS,"polygon"); p.setAttribute("points",vals.map(function(v,i){ return pt(i,v).join(","); }).join(" ")); p.setAttribute("class",cls); svg.appendChild(p); }
+  [2,4,6,8,10].forEach(function(g){ poly(STATS.map(function(){ return g; }),"grid"); });
+  poly(STATS.map(function(s){ return s[3]; }),"past");
+  poly(STATS.map(function(s){ return s[2]; }),"now");
+  STATS.forEach(function(s,i){
+    var c=document.createElementNS(NS,"circle"), p=pt(i,s[2]); c.setAttribute("cx",p[0]); c.setAttribute("cy",p[1]); c.setAttribute("r",4); c.setAttribute("class","pt"); svg.appendChild(c);
+    var t=document.createElementNS(NS,"text"), l=pt(i,12); t.setAttribute("x",l[0]); t.setAttribute("y",l[1]); t.setAttribute("text-anchor","middle"); t.setAttribute("dominant-baseline","middle"); t.textContent=s[1]; svg.appendChild(t);
+    var li=el("li"), delta=s[2]-s[3];
+    li.appendChild(el("span","nm",s[0]));
+    var bar=el("span","bar"), f=el("i"), g=el("u"); f.style.width=(s[2]*10)+"%"; g.style.left="calc("+(s[3]*10)+"% - 1px)"; bar.appendChild(f); bar.appendChild(g); li.appendChild(bar);
+    li.appendChild(el("span","v num",String(s[2])));
+    li.appendChild(el("span","d num"+(delta>0?" up":""), delta>0?"▲ +"+delta:(delta<0?"▼ "+delta:"=")));
+    $("stats").appendChild(li);
+  });
+  var up = STATS.filter(function(s){ return s[2]>s[3]; }).sort(function(a,b){ return (b[2]-b[3])-(a[2]-a[3]); }).map(function(s){ return s[0]; });
+  $("synth").textContent = up.length ? up.slice(0,-1).join(", ")+(up.length>1?" et ":"")+up[up.length-1]+" montent depuis juillet. Le reste tient bon." : "Tout tient bon depuis juillet.";
+
+  // Météo
+  NIVEAUX.forEach(function(n,i){
+    var s=el("span",null,n); s.style.top=((4-i)/4*100)+"%"; $("ylab").appendChild(s);
+    var g=el("div","gl"); g.style.top=((4-i)/4*100)+"%"; $("plot").appendChild(g);
+  });
+  var xs=METEO.map(function(v,i){ return i/(METEO.length-1)*100; }), ys=METEO.map(function(v){ return (5-v)/4*100; });
+  var line=xs.map(function(x,i){ return x.toFixed(2)+","+ys[i].toFixed(2); }).join(" ");
+  var s2=document.createElementNS(NS,"svg"); s2.setAttribute("viewBox","0 0 100 100"); s2.setAttribute("preserveAspectRatio","none"); s2.setAttribute("aria-hidden","true");
+  var ar=document.createElementNS(NS,"polygon"); ar.setAttribute("points","0,100 "+line+" 100,100"); ar.setAttribute("fill","var(--weather-fill)"); s2.appendChild(ar);
+  var pl=document.createElementNS(NS,"polyline"); pl.setAttribute("points",line); pl.setAttribute("fill","none"); pl.setAttribute("stroke","var(--weather)"); pl.setAttribute("stroke-width","2.5"); pl.setAttribute("vector-effect","non-scaling-stroke"); pl.setAttribute("stroke-linejoin","round"); s2.appendChild(pl);
+  $("plot").appendChild(s2);
+  xs.forEach(function(x,i){ var p=el("div","pt"+(i===xs.length-1?" last":"")); p.style.left=x+"%"; p.style.top=ys[i]+"%"; $("plot").appendChild(p); });
+  "ONDJFMAMJJAS".split("").forEach(function(m){ $("months").appendChild(el("span",null,m)); });
+
+  // Ruban et journal
+  var first=T[0].y, last=NOW.getFullYear(), sel=null, btns={};
+  $("rib-sub").textContent = troph.length+" trophées, de "+first+" à aujourd’hui";
+  for(var y=first;y<=last;y++){ (function(y){
+    var list=T.filter(function(e){ return e.y===y; });
+    var b=el("button","yr"+(list.length?"":" empty")); b.type="button"; b.setAttribute("aria-pressed","false");
+    b.setAttribute("aria-label", y+" : "+(list.length? list.length+" moment"+(list.length>1?"s":"") : "rien de noté"));
+    var st=el("span","stack"); list.forEach(function(e){ st.appendChild(med(e.m,"dot")); }); b.appendChild(st);
+    b.appendChild(el("span","lbl",String(y)));
+    if(!list.length) b.disabled=true;
+    b.addEventListener("click",function(){ pick(sel===y?null:y); });
+    btns[y]=b; $("ribbon").appendChild(b);
+  })(y); }
+  function fin(){ $("ribbon").scrollLeft = $("ribbon").scrollWidth; } fin(); window.addEventListener("load",fin); window.addEventListener("resize",fin);
+  $("all").addEventListener("click",function(){ pick(null); });
+
+  function pick(y){
+    sel=y;
+    Object.keys(btns).forEach(function(k){ btns[k].setAttribute("aria-pressed", String(+k===y)); });
+    $("all").setAttribute("aria-pressed", String(y===null));
+    draw();
+  }
+  function draw(){
+    var box=$("years"); box.textContent="";
+    $("jr-sub").textContent = sel===null ? "Du plus récent au plus ancien" : "Année "+sel+" seulement";
+    for(var y=last;y>=first;y--){
+      if(sel!==null && sel!==y) continue;
+      var list=T.filter(function(e){ return e.y===y; }); if(!list.length) continue;
+      var sec=el("div","year"), h=el("div","y num",String(y));
+      h.appendChild(el("small",null,"tu avais "+(y-1992)+" ans")); sec.appendChild(h);
+      var ul=el("ul","entries");
+      list.slice().reverse().forEach(function(e){
+        var li=el("li"); li.appendChild(med(e.m));
+        var d=el("div"); d.appendChild(el("div","t",e.t));
+        d.appendChild(el("div","m",e.c+" · "+dateTxt(e)+(e.w?" · avec "+e.w:"")));
+        if(e.n) d.appendChild(el("div","n","« "+e.n+" »"));
+        li.appendChild(d); ul.appendChild(li);
+      });
+      sec.appendChild(ul); box.appendChild(sec);
+    }
+  }
+  draw();
+
+  // Notification de déblocage (démonstration)
+  var timer;
+  function toast(m, small, strong){
+    var t=$("toast"); t.textContent="";
+    if(m) t.appendChild(med(m));
+    var d=el("div"); d.appendChild(el("small",null,small)); d.appendChild(el("strong",null,strong)); t.appendChild(d);
+    if(!m) t.style.paddingLeft="22px"; else t.style.paddingLeft="";
+    t.classList.add("on"); clearTimeout(timer); timer=setTimeout(function(){ t.classList.remove("on"); }, 4200);
+  }
+  $("btn-add").addEventListener("click",function(){ toast("a","Trophée débloqué","Apprendre l’espagnol"); });
+  $("btn-point").addEventListener("click",function(){ toast(null,"Maquette","Le formulaire du point vient à l’étape suivante"); });
+})();
+</script>

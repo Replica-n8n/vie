@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<title>Essai du stockage</title>
+<body>
+<script type="module">
+// Essai du stockage dans un vrai navigateur (IndexedDB n'existe pas dans Node).
+// Lancé par tools/essai-stockage.mjs, qui lit window.resultat.
+import { ouvrir, effacer, idUnique, BASE_DEMO } from '../js/stockage.js';
+import { DEMO } from '../js/config/demo.js';
+import { CATEGORIES } from '../js/config/trophees.js';
+import { vitrine } from '../js/coeur.js';
+
+const controles = [];
+const verifier = (nom, ok, detail = '') => controles.push({ nom, ok: Boolean(ok), detail: String(detail) });
+
+try {
+  const A = 'essai-a', B = 'essai-b';
+  await effacer(A); await effacer(B); await effacer(BASE_DEMO);
+
+  // Une horloge qu'on avance à la main, pour décider de qui est le plus récent.
+  let heure = 0;
+  const maintenant = () => new Date(Date.UTC(2026, 9, 3, 12, 0, heure++)).toISOString();
+
+  const a = await ouvrir(A, { maintenant });
+  verifier('un auteur est tiré au premier lancement', a.auteur && a.auteur.length >= 32, a.auteur);
+
+  const t = await a.ecrire('trophees', { titre: 'Permis', categorie: 'autonomie', niveau: 'bronze', annee: 2010, date: null });
+  verifier('un trophée reçoit un identifiant, deux dates et un auteur', t.id && t.creeLe && t.modifieLe && t.auteur === a.auteur, JSON.stringify(t));
+  verifier('deux identifiants ne se ressemblent pas', idUnique() !== idUnique());
+
+  const modifie = await a.ecrire('trophees', { ...t, niveau: 'argent' });
+  verifier('modifier garde la date de création et avance celle de modification', modifie.creeLe === t.creeLe && modifie.modifieLe > t.modifieLe);
+  verifier('modifier ne crée pas de doublon', (await a.tout('trophees')).length === 1);
+
+  await a.retirer('trophees', t.id);
+  verifier('retirer cache le trophée', (await a.tout('trophees')).length === 0);
+  const marque = (await a.tout('trophees', { avecSupprimes: true }))[0];
+  verifier('retirer laisse une marque au lieu d’effacer', marque && marque.supprimeLe, JSON.stringify(marque));
+  await a.remettre('trophees', t.id);
+  verifier('remettre annule la suppression', (await a.tout('trophees')).length === 1);
+
+  await a.ecrire('points', { mois: '2026-09', roue: { sante: 7 }, meteo: 4, satisfaction: 2, sens: 1, energie: 1 });
+  await a.ecrire('points', { mois: '2026-09', roue: { sante: 8 }, meteo: 5, satisfaction: 2, sens: 1, energie: 1 });
+  const points = await a.tout('points');
+  verifier('refaire le point du même mois le remplace', points.length === 1 && points[0].meteo === 5, JSON.stringify(points));
+
+  await a.regler('prenom', 'Léa');
+  verifier('un réglage se relit', (await a.reglage('prenom')) === 'Léa');
+  verifier('un réglage absent rend sa valeur par défaut', (await a.reglage('inconnu', 42)) === 42);
+
+  const photo = await a.ecrire('photos', { donnees: new Blob(['image fictive'], { type: 'image/jpeg' }), type: 'image/jpeg' });
+  const sauvegarde = JSON.parse(JSON.stringify(await a.exporter()));
+  verifier('la sauvegarde passe par du texte, photo comprise', typeof sauvegarde.magasins.photos[0].donnees === 'string' && sauvegarde.format === 'trophees-de-vie');
+
+  // Reprise sur un autre appareil
+  const b = await ouvrir(B, { maintenant });
+  const ecrits = await b.importer(sauvegarde);
+  verifier('la sauvegarde se reprend sur un appareil vide', ecrits > 0 && (await b.tout('trophees'))[0].niveau === 'argent', ecrits);
+  const reprise = await b.lire('photos', photo.id);
+  verifier('la photo revient entière', reprise && (await reprise.donnees.text()) === 'image fictive' && reprise.donnees.type === 'image/jpeg');
+  verifier('l’identité de l’appareil ne s’importe pas', b.auteur !== a.auteur && (await b.reglage('auteur')) === b.auteur);
+  verifier('importer deux fois n’écrit rien de plus', (await b.importer(sauvegarde)) === 0);
+
+  // Le plus récent gagne, dans les deux sens
+  await b.ecrire('trophees', { ...(await b.tout('trophees'))[0], niveau: 'or' });
+  await b.importer(sauvegarde);
+  verifier('une sauvegarde ancienne n’écrase pas une modification plus récente', (await b.tout('trophees'))[0].niveau === 'or');
+  await a.importer(JSON.parse(JSON.stringify(await b.exporter())));
+  verifier('une sauvegarde récente remplace l’ancienne version', (await a.tout('trophees'))[0].niveau === 'or');
+
+  let refus = '';
+  try { await b.importer({ format: 'autre' }); } catch (e) { refus = e.message; }
+  verifier('un fichier étranger est refusé avec une phrase claire', refus.includes('sauvegarde de Trophées de vie'), refus);
+  refus = '';
+  try { await b.importer({ format: 'trophees-de-vie', schema: 99, magasins: {} }); } catch (e) { refus = e.message; }
+  verifier('une sauvegarde d’une version future est refusée', refus.includes('plus récente'), refus);
+
+  // La démonstration vit dans sa propre base
+  const demo = await ouvrir(BASE_DEMO, { maintenant });
+  await demo.charger(DEMO);
+  verifier('la démonstration donne la vitrine de Léa', JSON.stringify(vitrine(await demo.tout('trophees'), CATEGORIES)) === '{"bronze":5,"argent":10,"or":5,"platine":1}');
+  verifier('la démonstration ne touche pas aux vraies données', (await a.tout('trophees')).length === 1);
+  verifier('le prénom de la démonstration est réglé', (await demo.reglage('prenom')) === 'Léa');
+
+  // Ce qui est écrit survit à la fermeture
+  a.fermer();
+  const a2 = await ouvrir(A, { maintenant });
+  verifier('les données survivent à la fermeture, l’auteur aussi', (await a2.tout('trophees')).length === 1 && a2.auteur === a.auteur);
+
+  a2.fermer(); b.fermer(); demo.fermer();
+  await effacer(A); await effacer(B); await effacer(BASE_DEMO);
+} catch (erreur) {
+  verifier('aucune erreur inattendue', false, erreur.stack || erreur);
+}
+window.resultat = controles;
+</script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trophées de vie</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&display=swap">
+<style>
+/* Une page d'accueil de navigateur : tout se lit sur un écran d'ordinateur, sans défiler ni cliquer.
+   Trois directions calmes à comparer (A papier, B verre calme, C brume), choisies par data-dir sur la racine.
+   Aucun effet de jeu : pas de métal brillant, pas de couleur vive sur le texte. */
+:root{
+  --body:"Atkinson Hyperlegible",Verdana,system-ui,sans-serif;
+  --display:"Fraunces",Georgia,serif; --num:400; --titre:500;
+  --bg:#F5F6F4; --ink:#1A1C1F; --muted:#585D63; --line:#D5D8D3; --accent:#24408E; --on-accent:#FFFFFF;
+  --panneau:transparent; --fort:transparent; --sur-fort:#1A1C1F; --rayon:0px;
+  --mb:#A9714B; --ma:#8A94A3; --mo:#BF962B; --mp:#4F93AE;
+  color-scheme:light;
+}
+:root[data-dir="b"]{
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif; --num:300; --titre:500;
+  --bg:#1F2A44; --ink:#FFFFFF; --muted:#E6E5F0; --line:rgba(255,255,255,.28); --accent:#FFFFFF; --on-accent:#27304F;
+  --panneau:rgba(22,26,48,.38); --fort:rgba(22,26,48,.38); --sur-fort:#FFFFFF; --rayon:28px;
+  --mb:#FFFFFF; --ma:#FFFFFF; --mo:#FFFFFF; --mp:#FFFFFF;
+  color-scheme:dark;
+}
+:root[data-dir="c"]{
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif; --num:700; --titre:600;
+  --bg:#E2E8EC; --ink:#1D2932; --muted:#4C5B66; --line:#C3CED6; --accent:#34566B; --on-accent:#FFFFFF;
+  --panneau:#F1F4F6; --fort:#34566B; --sur-fort:#FFFFFF; --rayon:28px;
+  --mb:#34566B; --ma:#34566B; --mo:#34566B; --mp:#34566B;
+  color-scheme:light;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 var(--body)}
+:root[data-dir="b"] body{background:linear-gradient(155deg,#1D2742 0%,#3A4070 38%,#8A6480 70%,#C99679 100%) fixed}
+h1,h2,p,ul{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+.page{height:100%;max-width:1680px;margin:0 auto;padding-inline:clamp(16px,3vw,48px);padding-block:clamp(16px,3vh,36px);
+  display:grid;gap:clamp(14px,2.2vh,24px) clamp(16px,2vw,32px);
+  grid-template-columns:minmax(0,1fr) clamp(300px,26vw,400px);grid-template-rows:auto minmax(110px,1.1fr) auto minmax(min-content,.9fr);
+  grid-template-areas:"top top" "sv cv" "ax cv" "rb hf"}
+.top{grid-area:top}.sv{grid-area:sv}.cv{grid-area:cv}.ax{grid-area:ax}.rb{grid-area:rb}.hf{grid-area:hf}
+.p,.cell{background:var(--panneau);border-radius:var(--rayon);min-width:0}
+.lab{font:700 14px/1.1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.petit{font-size:15px;color:var(--muted)}
+.num{font-family:var(--display);font-weight:var(--num);line-height:.95;font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.02em}
+
+/* En-tête */
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+h1{font:var(--titre) clamp(34px,4.2vw,56px)/1 var(--display);letter-spacing:-.02em}
+.actions{display:flex;gap:8px}
+.btn{min-height:48px;padding:0 22px;border-radius:24px;border:1.5px solid var(--line);background:transparent;font-weight:700}
+.btn.main{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+
+/* Marques : une forme par niveau, à plat */
+.m{display:inline-block;width:14px;height:14px;flex:none}
+.m.b{border-radius:50%;background:var(--mb)}
+.m.a{clip-path:polygon(50% 0,93.3% 25%,93.3% 75%,50% 100%,6.7% 75%,6.7% 25%);background:var(--ma)}
+.m.o{clip-path:polygon(50% 0,64.9% 14%,85.4% 14.6%,86% 35.1%,100% 50%,86% 64.9%,85.4% 85.4%,64.9% 86%,50% 100%,35.1% 86%,14.6% 85.4%,14% 64.9%,0 50%,14% 35.1%,14.6% 14.6%,35.1% 14%);background:var(--mo)}
+.m.p{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);background:var(--mp)}
+.m.g{width:24px;height:24px}
+
+/* Souvenir du jour */
+.sv{background:var(--fort);color:var(--sur-fort);display:flex;flex-direction:column;justify-content:center;gap:8px}
+.sv .k{font-size:15px;opacity:.9}
+.sv .t{font:var(--titre) clamp(30px,3.6vw,52px)/1.05 var(--display);letter-spacing:-.02em;text-wrap:balance;max-width:22ch}
+.sv .q{font-size:18px;font-style:italic;max-width:56ch;opacity:.92}
+
+/* Chiffres et cinq axes */
+.ax{display:grid;grid-template-columns:1.25fr repeat(5,minmax(0,1fr));gap:clamp(8px,1vw,16px)}
+.cell{display:flex;flex-direction:column;gap:6px}
+.cell .num{font-size:clamp(48px,5.4vw,84px)}
+.cell .n{font-weight:700;line-height:1.2}
+.cell .pts{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}
+
+/* Ruban des années */
+.rb{display:flex;flex-direction:column;justify-content:flex-end;gap:10px}
+.ruban{display:flex;align-items:flex-end;border-bottom:1.5px solid var(--line);padding-bottom:8px;flex:1;min-height:44px}
+.an{flex:1 1 0;display:flex;flex-direction:column-reverse;align-items:center;gap:5px;min-width:0}
+.ans{display:flex;justify-content:space-between;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* En ce moment */
+.cv{display:flex;flex-direction:column;justify-content:center;gap:10px}
+.radar{display:block;width:100%;max-height:52%;overflow:visible}
+.radar .grid{fill:none;stroke:var(--line)}
+.radar .past{fill:none;stroke:var(--muted);stroke-width:1.25;stroke-dasharray:4 4}
+.radar .now{fill:var(--accent);fill-opacity:.14;stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
+.radar text{fill:var(--muted);font:400 15px var(--body)}
+.radar text tspan{fill:var(--ink);font-weight:700}
+.temps{font:var(--titre) clamp(30px,3vw,44px)/1 var(--display);letter-spacing:-.02em}
+
+/* Hauts faits */
+.hf{display:flex;flex-direction:column;justify-content:center;gap:12px}
+.hf ul{list-style:none;padding:0;display:grid;gap:10px}
+.hf li{display:flex;gap:12px;align-items:center}
+.hf strong{display:block;line-height:1.2}
+
+/* A · Papier : pas de cartes, des filets et beaucoup d'air */
+:root:not([data-dir]) .p,:root[data-dir="a"] .p{border-top:1px solid var(--line);padding-top:clamp(12px,2vh,20px)}
+:root:not([data-dir]) .cell,:root[data-dir="a"] .cell{border-top:1px solid var(--line);padding-top:clamp(12px,2vh,20px)}
+:root:not([data-dir]) .cv,:root[data-dir="a"] .cv{border-top:0;border-left:1px solid var(--line);padding:0 0 0 clamp(16px,2vw,32px)}
+:root:not([data-dir]) .sv .t,:root[data-dir="a"] .sv .t{font-style:italic;font-weight:400}
+
+/* B · Verre calme : un ciel d'aube, des panneaux translucides, tout en blanc */
+:root[data-dir="b"] .p,:root[data-dir="b"] .cell{padding:clamp(14px,2.2vh,24px) clamp(16px,1.6vw,26px);-webkit-backdrop-filter:blur(26px) saturate(1.4);backdrop-filter:blur(26px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -1px 0 rgba(0,0,0,.22),0 14px 30px rgba(10,12,30,.22)}
+:root[data-dir="b"] .btn{background:rgba(22,26,48,.4)}
+:root[data-dir="b"] .btn.main{background:#FFFFFF}
+@media (prefers-reduced-transparency:reduce){ :root[data-dir="b"] .p,:root[data-dir="b"] .cell{background:#2A2F52;-webkit-backdrop-filter:none;backdrop-filter:none} }
+@media (prefers-contrast:more){ :root[data-dir="b"] .p,:root[data-dir="b"] .cell{background:#2A2F52;-webkit-backdrop-filter:none;backdrop-filter:none} }
+
+/* C · Brume : des aplats ton sur ton, un seul bleu ardoise */
+:root[data-dir="c"] .p,:root[data-dir="c"] .cell{padding:clamp(14px,2.2vh,24px) clamp(16px,1.6vw,26px)}
+:root[data-dir="c"] .sv .m{background:#FFFFFF}
+
+/* Le sélecteur de direction (outil de maquette) */
+.choix{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:20;display:flex;gap:4px;align-items:center;padding:5px 5px 5px 16px;border-radius:999px;background:#17181C;color:#FFFFFF;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.choix button{min-height:44px;padding:0 14px;border-radius:999px;border:0;background:transparent;color:#FFFFFF;font-weight:700}
+.choix button[aria-pressed="true"]{background:#FFFFFF;color:#17181C}
+
+/* Écran étroit : la page s'empile et défile */
+@media (max-width:900px){
+  html,body{height:auto}
+  .page{height:auto;grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-template-areas:"top" "sv" "ax" "rb" "cv" "hf";padding-bottom:84px}
+  .ax{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ruban{min-height:64px}
+  .radar{max-height:none;max-width:340px;margin:0 auto}
+  :root:not([data-dir]) .cv,:root[data-dir="a"] .cv{border-left:0;border-top:1px solid var(--line);padding:16px 0 0}
+  .choix{width:calc(100% - 20px);justify-content:space-between;padding-left:12px}
+  .choix button{padding:0 10px}
+}
+</style>
+
+<div class="page">
+  <header class="top">
+    <div><p class="petit" id="today"></p><h1 id="hello">Bonjour</h1></div>
+    <div class="actions">
+      <button class="btn" type="button">Faire le point</button>
+      <button class="btn main" type="button">+ Ajouter</button>
+    </div>
+  </header>
+
+  <section class="sv p" aria-label="Souvenir du jour" id="sv"></section>
+
+  <section class="cv p" aria-label="En ce moment">
+    <svg class="radar" id="radar" viewBox="-180 -112 360 224" role="img" aria-label="Carte de vie sur huit domaines, aujourd’hui et il y a trois mois"></svg>
+    <p class="lab">En ce moment</p>
+    <p class="temps" id="temps"></p>
+    <p class="petit" id="synth"></p>
+  </section>
+
+  <section class="ax" aria-label="En chiffres" id="axes"></section>
+
+  <section class="rb p" aria-labelledby="rb-t">
+    <h2 class="lab" id="rb-t">Ta vie d’un coup d’œil</h2>
+    <div class="ruban" id="ruban"></div>
+    <div class="ans" id="ans" aria-hidden="true"></div>
+  </section>
+
+  <section class="hf p" aria-labelledby="hf-t">
+    <h2 class="lab" id="hf-t">Hauts faits</h2>
+    <ul id="feats"></ul>
+  </section>
+</div>
+
+<div class="choix" role="group" aria-label="Direction de la maquette">
+  <span>Maquette</span>
+  <button type="button" data-dir="a" aria-pressed="true">A · Papier</button>
+  <button type="button" data-dir="b" aria-pressed="false">B · Verre calme</button>
+  <button type="button" data-dir="c" aria-pressed="false">C · Brume</button>
+</div>
+
+<script>
+(function(){
+  var NOW = new Date();
+  var MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  var JOURS = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+  var AN = NOW.getFullYear();
+
+  var AXES = [["vivre","Vivre ma vie à moi"],["hors","Vivre hors du travail"],["dire","Dire ce que je ressens"],["amis","Garder mes amis"],["bonheur","M’autoriser le bonheur"]];
+
+  // Contenu d'exemple, sans personnage : il sera remplacé par ce que tu saisiras.
+  // y = années en arrière, t titre, x axe (ou passage, scene), m niveau, n note, pin haut fait, jour = anniversaire aujourd'hui
+  var T = [
+    {y:17, t:"Premier job d’été", x:"passage", m:"b"}, {y:16, t:"Le bac", x:"passage", m:"b"}, {y:16, t:"Permis de conduire", x:"passage", m:"a"},
+    {y:14, t:"Partir seule à Lisbonne", x:"vivre", m:"a"}, {y:12, t:"Licence", x:"passage", m:"a"},
+    {y:11, t:"Master en urbanisme", x:"passage", m:"o", pin:1}, {y:11, t:"Premier emploi", x:"passage", m:"b"},
+    {y:9, t:"Premier logement à moi", x:"passage", m:"a"}, {y:8, t:"Six mois à Montréal", x:"vivre", m:"o", pin:1},
+    {y:7, t:"Apprendre à nager", x:"hors", m:"a"}, {y:6, t:"Tenir pendant le confinement", x:"scene", m:"a"}, {y:6, t:"Épargne de secours", x:"passage", m:"a"},
+    {y:5, t:"Demander de l’aide", x:"dire", m:"a"}, {y:5, t:"Dire que je partais", x:"dire", m:"o", pin:1},
+    {y:4, t:"Premier 10 km", x:"hors", m:"b"}, {y:4, t:"Exposer mes photos", x:"bonheur", m:"a"}, {y:3, t:"Devenir marraine", x:"amis", m:"a"},
+    {y:2, t:"Mon premier semi-marathon", x:"hors", m:"o", jour:1, n:"J’ai cru abandonner au 15e kilomètre. 2 h 07 à l’arrivée."},
+    {y:1, t:"Vingt ans d’une même amitié", x:"amis", m:"a"}, {y:1, t:"M’offrir le Japon", x:"bonheur", m:"b"}, {y:1, t:"Changer de métier", x:"vivre", m:"o"},
+    {y:0, t:"Finir mon potager", x:"hors", m:"b"}
+  ];
+  var STATS = [["Santé",7,6],["Travail",8,8],["Argent",5,5],["Amour",6,4],["Proches",8,7],["Loisirs",6,6],["Évolution",7,7],["Cadre de vie",7,6]];
+  var METEO = "Éclaircies";
+
+  var NS="http://www.w3.org/2000/svg";
+  function $(id){ return document.getElementById(id); }
+  function el(tag, cls, txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+  function m(k, grand){ var s=el("span","m "+k+(grand?" g":"")); s.setAttribute("aria-hidden","true"); return s; }
+  function deux(n){ return ("0"+n).slice(-2); }
+
+  function heure(){ $("today").textContent = JOURS[NOW.getDay()]+" "+NOW.getDate()+" "+MOIS[NOW.getMonth()]+" · "+deux(new Date().getHours())+" h "+deux(new Date().getMinutes()); }
+  heure(); setInterval(heure, 20000);
+  $("hello").textContent = new Date().getHours()>=18 ? "Bonsoir" : "Bonjour";
+
+  // Souvenir du jour
+  var s = T.filter(function(e){ return e.jour; })[0];
+  $("sv").appendChild(el("p","k","Il y a "+s.y+" ans aujourd’hui"));
+  $("sv").appendChild(el("p","t",s.t));
+  $("sv").appendChild(el("p","q","« "+s.n+" »"));
+
+  // Chiffres et cinq axes
+  var debut = Math.max.apply(null, T.map(function(e){ return e.y; }));
+  function cellule(nombre, nom, marques){
+    var c=el("div","cell"); c.appendChild(el("span","num",String(nombre))); c.appendChild(el("span","n",nom));
+    if(marques){ var p=el("span","pts"); marques.forEach(function(e){ p.appendChild(m(e.m)); }); c.appendChild(p); }
+    else c.appendChild(el("span","petit","en "+debut+" ans, dont "+T.filter(function(e){ return e.x==="passage"; }).length+" grands passages"));
+    return c;
+  }
+  $("axes").appendChild(cellule(T.length, "moments"));
+  AXES.forEach(function(a){ var siens=T.filter(function(e){ return e.x===a[0]; }); $("axes").appendChild(cellule(siens.length, a[1], siens)); });
+
+  // Ruban : toutes les années d'un coup
+  for(var y=debut;y>=0;y--){ var col=el("div","an"); T.filter(function(e){ return e.y===y; }).forEach(function(e){ col.appendChild(m(e.m)); }); $("ruban").appendChild(col); }
+  [AN-debut, AN-Math.round(debut/2), AN].forEach(function(a){ $("ans").appendChild(el("span",null,String(a))); });
+
+  // Hauts faits
+  T.filter(function(e){ return e.pin; }).forEach(function(e){
+    var li=el("li"); li.appendChild(m(e.m,true)); var d=el("div"); d.appendChild(el("strong",null,e.t)); d.appendChild(el("span","petit",String(AN-e.y))); li.appendChild(d); $("feats").appendChild(li);
+  });
+
+  // En ce moment
+  var R=78, svg=$("radar");
+  function pt(i,v){ var a=(-90+i*45)*Math.PI/180; return [Math.cos(a)*R*v/10, Math.sin(a)*R*v/10]; }
+  function poly(vals,cls){ var p=document.createElementNS(NS,"polygon"); p.setAttribute("points",vals.map(function(v,i){ var q=pt(i,v); return q[0].toFixed(1)+","+q[1].toFixed(1); }).join(" ")); p.setAttribute("class",cls); svg.appendChild(p); }
+  [5,10].forEach(function(g){ poly(STATS.map(function(){ return g; }),"grid"); });
+  poly(STATS.map(function(x){ return x[2]; }),"past"); poly(STATS.map(function(x){ return x[1]; }),"now");
+  STATS.forEach(function(x,i){
+    var t=document.createElementNS(NS,"text"), l=pt(i,11.4);
+    t.setAttribute("x",l[0].toFixed(1)); t.setAttribute("y",(l[1]+(i===0?-4:i===4?6:0)).toFixed(1));
+    t.setAttribute("text-anchor", Math.abs(l[0])<1 ? "middle" : l[0]>0 ? "start" : "end"); t.setAttribute("dominant-baseline","middle");
+    t.textContent=x[0]+" "; var n=document.createElementNS(NS,"tspan"); n.textContent=x[1]; t.appendChild(n); svg.appendChild(t);
+  });
+  $("temps").textContent = METEO;
+  var up = STATS.filter(function(x){ return x[1]>x[2]; }).sort(function(a,b){ return (b[1]-b[2])-(a[1]-a[2]); }).map(function(x){ return x[0]; });
+  $("synth").textContent = up.slice(0,-1).join(", ")+" et "+up[up.length-1]+" montent depuis trois mois.";
+
+  // Choix de la direction
+  var bs=document.querySelectorAll(".choix button");
+  function dir(d){ document.documentElement.setAttribute("data-dir",d); Array.prototype.forEach.call(bs,function(b){ b.setAttribute("aria-pressed",String(b.getAttribute("data-dir")===d)); }); }
+  Array.prototype.forEach.call(bs,function(b){ b.addEventListener("click",function(){ dir(b.getAttribute("data-dir")); }); });
+  var h=location.hash.slice(1); if(h==="a"||h==="b"||h==="c") dir(h);
+})();
+</script>
