@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=3';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE } from './config/vie.js?v=3';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=3';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, ruban, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=3';
+import { ouvrir, demanderPersistance } from './stockage.js?v=4';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE } from './config/vie.js?v=4';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=4';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, ruban, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=4';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -27,7 +27,7 @@ function bouton(cls, txt, appuye) {
   if (appuye != null) b.setAttribute('aria-pressed', String(appuye));
   return b;
 }
-// Un trophée : la même coupe, dans la couleur et la taille de sa médaille.
+// Un trophée : la même coupe, dans la couleur de sa médaille.
 function coupe(niveau, grande) {
   const s = el('span', `m ${niveau}${grande ? ' g' : ''}`);
   s.setAttribute('aria-hidden', 'true');

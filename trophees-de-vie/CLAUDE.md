@@ -28,7 +28,7 @@ pas des accomplissements.
   surtout que c'est courant. Les sources vivent dans `js/config/vie.js`.
 - **Aucun chiffre inventé.** Une réussite sans statistique vérifiée porte `defaut`,
   pas `rarete`.
-- Trophées or, argent, bronze, nommés ainsi. Dessinés à plat, sans reflet : elle a
+- Trophées or, argent, bronze, nommés ainsi, tous de la MÊME taille. Dessinés à plat, sans reflet : elle a
   rejeté le métal brillant (« jeu vidéo »), les lunes (« ne veulent rien dire ») et
   « effort, cap, montagne » (« ne me parlent pas »).
 - Aucun personnage fictif, aucune donnée d'exemple dans la page. La vie d'exemple
