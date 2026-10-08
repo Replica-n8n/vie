@@ -185,3 +185,18 @@ h1{font:500 clamp(34px,4.2vw,56px)/1 var(--display);letter-spacing:-.02em}
 .bloc input[type=file]{font-size:15px;max-width:100%}
 .bloc input[type=file]::file-selector-button{min-height:44px;margin-right:12px;padding:0 16px;border-radius:22px;border:1.5px solid var(--line);background:rgba(255,255,255,.08);color:inherit;font:inherit;font-weight:700;cursor:pointer}
 .alerte{font-weight:700;color:var(--or)}
+
+/* Un axe est un bouton : vide, il invite par un « + » au lieu d'afficher zéro */
+button.cell{font:inherit;color:inherit;text-align:left;align-items:flex-start;cursor:pointer;transition:border-color .2s}
+button.cell:hover{border-color:rgba(255,255,255,.6)}
+.num.plus{opacity:.6}
+
+/* Propositions à toucher : cochée, la puce s'ouvre sur l'année et les trois lunes */
+.puce{display:flex;flex-wrap:wrap;align-items:center;gap:6px;max-width:100%;border-radius:25px;border:1.5px solid var(--line);background:rgba(255,255,255,.08);transition:border-radius .2s cubic-bezier(.25,1,.5,1)}
+.puce.on{border-color:#FFFFFF;background:rgba(255,255,255,.2);border-radius:14px;padding-right:6px}
+.puce-t{min-height:48px;padding:6px 16px;border:0;border-radius:inherit;background:none;font-weight:700;line-height:1.2;text-align:left}
+.puce-t:disabled{cursor:default;opacity:.75}
+.puce input{width:84px;min-height:40px;border-radius:10px;border:1.5px solid var(--line);background:rgba(10,12,30,.3);padding:0 10px}
+.puce .niv button{width:44px;height:44px;border-radius:12px;background:transparent}
+.groupe{display:grid;gap:8px}
+.groupe .lab{margin:6px 0 0}

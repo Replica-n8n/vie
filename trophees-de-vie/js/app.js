@@ -2,10 +2,12 @@
 // (ajouter, faire le point, tout voir). Les règles sont dans coeur.js, rien n'est
 // calculé ici.
 
-import { ouvrir, demanderPersistance } from './stockage.js';
-import { NIVEAUX, PASSAGES, SCENES, AXES } from './config/vie.js';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js';
-import { comptes, parAxe, hautsFaits, ruban, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js';
+// Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
+// un nouvel app.js pourrait charger une ancienne configuration.
+import { ouvrir, demanderPersistance } from './stockage.js?v=2';
+import { NIVEAUX, PASSAGES, SCENES, AXES } from './config/vie.js?v=2';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=2';
+import { comptes, parAxe, hautsFaits, ruban, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=2';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -69,29 +71,35 @@ function dessinerSouvenir() {
   if (s.moment.note) sv.append(el('p', 'q', `« ${s.moment.note} »`));
 }
 
-function dessinerChiffres(vie) {
+function dessinerChiffres() {
   const ax = $('axes');
   ax.textContent = '';
   const c = comptes(etat.moments, NIVEAUX);
   const total = el('div', 'cell');
   total.append(el('span', 'num', String(c.total)), el('span', 'n', c.total > 1 ? 'moments' : 'moment'));
-  if (vie.debut != null) {
-    const duree = an() - vie.debut;
-    total.append(el('span', 'petit', duree > 0 ? `en ${duree} an${duree > 1 ? 's' : ''}` : 'cette année'));
-  }
+  // Une seule ligne courte sous le total : une de plus et la page ne tient plus sur
+  // un petit écran. La durée n'y est pas, le ruban la montre déjà.
+  const passages = etat.moments.filter((m) => m.genre === 'passage').length;
+  if (passages) total.append(el('span', 'petit', `dont ${pluriel(passages, ['passage', 'passages'])}`));
   const leg = el('span', 'leg');
   for (const n of [...NIVEAUX].reverse()) {
+    if (!c[n.id]) continue; // un niveau à zéro n'a rien à dire
     const i = el('span');
     i.append(lune(n.id), pluriel(c[n.id], n.mots));
     leg.append(i);
   }
   total.append(leg);
   ax.append(total);
+  // Chaque axe est un bouton : il ouvre ses propositions. Vide, il montre un « + »
+  // plutôt qu'un zéro, parce qu'un axe pas encore rempli n'est pas un échec.
   for (const a of parAxe(etat.moments, AXES)) {
-    const d = el('div', 'cell');
+    const d = bouton('cell axe');
     const pts = el('span', 'pts');
     for (const m of a.moments) pts.append(lune(m.niveau));
-    d.append(el('span', 'num', String(a.moments.length)), el('span', 'n', a.nom), pts);
+    const vide = !a.moments.length;
+    d.append(el('span', `num${vide ? ' plus' : ''}`, vide ? '+' : String(a.moments.length)), el('span', 'n', a.nom), pts);
+    d.setAttribute('aria-label', vide ? `${a.nom} : ajouter` : `${a.nom} : ${pluriel(a.moments.length, ['moment', 'moments'])}, ajouter`);
+    d.addEventListener('click', () => ouvrirAxe(a));
     ax.append(d);
   }
 }
@@ -176,7 +184,7 @@ function dessiner() {
   const vie = ruban(etat.moments, an());
   heure();
   dessinerSouvenir();
-  dessinerChiffres(vie);
+  dessinerChiffres();
   dessinerRuban(vie);
   dessinerHautsFaits();
   dessinerMoment();
@@ -267,21 +275,56 @@ function question(corps, id, texte, reponse, { aide, sansNiveau } = {}) {
   q.append(lb);
   if (aide) q.append(el('span', 'aide', aide));
   ligne.append(mots, annee);
-  if (!sansNiveau) {
-    const niv = el('div', 'niv');
-    niv.setAttribute('role', 'group');
-    niv.setAttribute('aria-label', 'À quel point c’était dur');
-    for (const n of NIVEAUX) {
-      const b = bouton(null, null, reponse.niveau === n.id);
-      b.id = `n-${id}-${n.id}`; b.title = n.nom; b.setAttribute('aria-label', n.nom);
-      b.append(lune(n.id));
-      b.addEventListener('click', () => { reponse.niveau = n.id; for (const o of niv.children) o.setAttribute('aria-pressed', String(o === b)); });
-      niv.append(b);
-    }
-    ligne.append(niv);
-  }
+  if (!sansNiveau) ligne.append(lunes(`n-${id}`, reponse));
   q.append(ligne);
   corps.append(q);
+}
+
+// Les trois lunes : à quel point c'était dur.
+function lunes(id, reponse) {
+  const niv = el('div', 'niv');
+  niv.setAttribute('role', 'group');
+  niv.setAttribute('aria-label', 'À quel point c’était dur');
+  for (const n of NIVEAUX) {
+    const b = bouton(null, null, reponse.niveau === n.id);
+    b.id = `${id}-${n.id}`; b.title = n.nom; b.setAttribute('aria-label', n.nom);
+    b.append(lune(n.id));
+    b.addEventListener('click', () => { reponse.niveau = n.id; for (const o of niv.children) o.setAttribute('aria-pressed', String(o === b)); });
+    niv.append(b);
+  }
+  return niv;
+}
+
+// Des propositions à toucher. Une proposition cochée demande l'année et le niveau,
+// sur place ; une proposition déjà dans la vie reste cochée et ne se recoche pas.
+function puces(corps, propositions, coches, deja, niveauDefaut = 'cap') {
+  const c = el('div', 'chips');
+  const dessinerUne = (p) => {
+    const boite = el('div', 'puce');
+    const fait = deja.has(p.id);
+    const reponse = coches.get(p.id);
+    const b = bouton('puce-t', p.titre, fait || Boolean(reponse));
+    b.id = `pu-${p.id}`;
+    if (fait) { b.disabled = true; b.title = 'Déjà dans ta vie'; }
+    boite.append(b);
+    if (fait || reponse) boite.classList.add('on');
+    if (reponse) {
+      const a = el('input');
+      a.type = 'number'; a.inputMode = 'numeric'; a.placeholder = 'Année'; a.id = `an-${p.id}`; a.value = reponse.annee;
+      a.setAttribute('aria-label', `Année de : ${p.titre}`);
+      a.addEventListener('input', () => { reponse.annee = a.value; });
+      boite.append(a, lunes(`nv-${p.id}`, reponse));
+    }
+    b.addEventListener('click', () => {
+      if (coches.has(p.id)) coches.delete(p.id); else coches.set(p.id, { annee: '', niveau: niveauDefaut });
+      const neuve = dessinerUne(p);
+      boite.replaceWith(neuve);
+      (neuve.querySelector('input') ?? neuve.querySelector('button')).focus();
+    });
+    return boite;
+  };
+  for (const p of propositions) c.append(dessinerUne(p));
+  corps.append(c);
 }
 
 function choix(corps, libelles, courant, regler, enLigne) {
@@ -295,66 +338,78 @@ function choix(corps, libelles, courant, regler, enLigne) {
 }
 
 const moment = (genre, cle, r, suite = {}) => ({
-  genre, passage: genre === 'passage' ? cle : null, scene: genre === 'scene' ? cle : null, axe: genre === 'axe' ? cle : null,
+  genre, passage: genre === 'passage' ? cle : null, scene: genre === 'scene' ? cle : null, axe: genre === 'axe' ? cle : null, proposition: null,
   titre: r.titre.trim(), niveau: r.niveau, annee: anneeValide(r.annee), date: null, note: '', hautFait: false, rappel: true, ...suite,
 });
 const rempli = (r) => (r.titre ?? '').trim().length > 0;
 
-// ---------- Ajouter : trois écrans ----------
+// ---------- Ajouter : tout se touche, rien ne s'écrit sauf si on le veut ----------
+
+// Ce qui est déjà dans la vie, par identifiant de passage ou de proposition.
+const dejaVecus = () => new Set(etat.moments.flatMap((m) => [m.passage, m.proposition]).filter(Boolean));
+
+// Les moments à écrire à partir de ce qui est coché.
+function momentsCoches(coches) {
+  const nouveaux = [];
+  for (const p of PASSAGES) if (coches.has(p.id)) nouveaux.push(moment('passage', p.id, { titre: p.titre, ...coches.get(p.id) }));
+  for (const a of AXES) for (const p of a.propositions) if (coches.has(p.id)) nouveaux.push(moment('axe', a.id, { titre: p.titre, ...coches.get(p.id) }, { proposition: p.id }));
+  return nouveaux;
+}
+
+async function enregistrer(nouveaux) {
+  for (const m of nouveaux) await etat.base.ecrire('moments', m);
+  fermerVolet();
+  if (!nouveaux.length) return;
+  await rafraichir();
+  demanderPersistance();
+  annoncer(nouveaux.length > 1 ? `${nouveaux.length} moments ajoutés` : 'Moment ajouté', `${pluriel(etat.moments.length, ['moment', 'moments'])} en tout`);
+}
 
 function ouvrirAjout() {
-  const dejaVecus = new Set(etat.moments.filter((m) => m.passage).map((m) => m.passage));
-  const coches = new Map(); // identifiant du passage → année saisie
+  const deja = dejaVecus();
+  const coches = new Map(); // identifiant → { annee, niveau }
   const autre = { niveau: 'cap' };
   const scenes = SCENES.map(() => ({ niveau: 'montagne' }));
-  const axes = AXES.map(() => ({ niveau: 'cap' }));
 
   ouvrirVolet('add', [
-    { label: 'Ta vie', titre: 'Lesquels de ces passages as-tu vécus ?', dessiner: function rendu(corps, aViser) {
-      corps.textContent = '';
-      const c = el('div', 'chips');
-      PASSAGES.forEach((p, i) => {
-        const fait = dejaVecus.has(p.id);
-        const b = bouton('chip', null, fait || coches.has(p.id));
-        b.append(p.titre);
-        if (fait) { b.disabled = true; b.title = 'Déjà dans ta vie'; }
-        if (coches.has(p.id)) {
-          const a = el('input');
-          a.type = 'number'; a.inputMode = 'numeric'; a.placeholder = 'Année'; a.id = `p-${p.id}`; a.value = coches.get(p.id);
-          a.setAttribute('aria-label', `Année de : ${p.titre}`);
-          a.addEventListener('click', (e) => e.stopPropagation());
-          a.addEventListener('keydown', (e) => e.stopPropagation());
-          a.addEventListener('keyup', (e) => e.stopPropagation());
-          a.addEventListener('input', () => coches.set(p.id, a.value));
-          b.append(a);
-        }
-        b.addEventListener('click', () => { if (coches.has(p.id)) coches.delete(p.id); else coches.set(p.id, ''); rendu(corps, i); });
-        c.append(b);
-      });
-      corps.append(c, el('p', 'aide', 'L’année est facultative.'));
+    { label: 'Ta vie', titre: 'Lesquels de ces passages as-tu vécus ?', dessiner(corps) {
+      legende(corps);
+      puces(corps, PASSAGES, coches, deja);
       question(corps, 'autre', 'Un autre passage qui a compté ?', autre);
-      if (aViser != null) { const cible = c.children[aViser]; (cible.querySelector('input') ?? cible).focus(); }
     } },
-    { label: 'Ta vie', titre: 'Trois moments qui t’ont faite', dessiner(corps) {
+    { label: 'Ta vie', titre: 'Et ça, tu l’as déjà fait ?', dessiner(corps) {
       legende(corps);
-      SCENES.forEach((s, i) => question(corps, `s-${s.id}`, s.question, scenes[i], { aide: s.facultatif ? 'Tu peux passer cette question.' : null }));
+      for (const a of AXES) {
+        const g = el('div', 'groupe');
+        g.append(el('h3', 'lab', a.nom));
+        puces(g, a.propositions, coches, deja);
+        corps.append(g);
+      }
     } },
-    { label: 'Ta vie', titre: 'Ce qu’on regrette de ne pas avoir fait, toi tu l’as fait', dessiner(corps) {
-      legende(corps);
-      AXES.forEach((a, i) => question(corps, `x-${a.id}`, a.question, axes[i]));
+    { label: 'Ta vie', titre: 'Si tu veux aller plus loin', dessiner(corps) {
+      corps.append(el('p', 'aide', 'Trois questions plus personnelles. Tu peux tout passer.'));
+      SCENES.forEach((sc, i) => question(corps, `s-${sc.id}`, sc.question, scenes[i]));
     } },
   ], 'Ajouter à ma vie', async () => {
-    const nouveaux = [];
-    for (const p of PASSAGES) if (coches.has(p.id)) nouveaux.push(moment('passage', p.id, { titre: p.titre, niveau: 'cap', annee: coches.get(p.id) }));
+    const nouveaux = momentsCoches(coches);
     if (rempli(autre)) nouveaux.push(moment('passage', null, autre));
-    SCENES.forEach((s, i) => { if (rempli(scenes[i])) nouveaux.push(moment('scene', s.id, scenes[i], { rappel: !s.discret })); });
-    AXES.forEach((a, i) => { if (rempli(axes[i])) nouveaux.push(moment('axe', a.id, axes[i])); });
-    for (const m of nouveaux) await etat.base.ecrire('moments', m);
-    fermerVolet();
-    if (!nouveaux.length) return;
-    await rafraichir();
-    demanderPersistance();
-    annoncer(nouveaux.length > 1 ? `${nouveaux.length} moments ajoutés` : 'Moment ajouté', `${pluriel(etat.moments.length, ['moment', 'moments'])} en tout`);
+    SCENES.forEach((sc, i) => { if (rempli(scenes[i])) nouveaux.push(moment('scene', sc.id, scenes[i], { rappel: !sc.discret })); });
+    await enregistrer(nouveaux);
+  });
+}
+
+// Un axe seul, ouvert depuis sa tuile.
+function ouvrirAxe(a) {
+  const coches = new Map();
+  const libre = { niveau: 'cap' };
+  ouvrirVolet('add', [{ label: 'Ta vie', titre: a.nom, dessiner(corps) {
+    legende(corps);
+    puces(corps, a.propositions, coches, dejaVecus());
+    question(corps, `x-${a.id}`, a.question, libre);
+  } }], 'Ajouter à ma vie', async () => {
+    const nouveaux = momentsCoches(coches);
+    if (rempli(libre)) nouveaux.push(moment('axe', a.id, libre));
+    await enregistrer(nouveaux);
   });
 }
 

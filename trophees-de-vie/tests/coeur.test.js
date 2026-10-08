@@ -23,13 +23,17 @@ test('la configuration : trois niveaux, cinq axes, trois scènes, des passages s
     const ids = groupe.map((x) => x.id);
     assert.equal(new Set(ids).size, ids.length, `identifiant en double dans ${ids}`);
   }
+  const propositions = AXES.flatMap((a) => a.propositions);
+  for (const a of AXES) assert.ok(a.propositions.length >= 5 && a.propositions.length <= 7, `${a.id} : ${a.propositions.length} propositions`);
+  const idsATouchers = [...PASSAGES, ...propositions].map((x) => x.id);
+  assert.equal(new Set(idsATouchers).size, idsATouchers.length, 'un passage et une proposition partagent un identifiant');
   assert.equal(DOMAINES.length, 8);
   assert.equal(METEOS.length, 5);
   assert.equal(ELANS.length, 3);
 });
 
 test('la configuration : aucun tiret long, aucun mot médical', () => {
-  const textes = [...NIVEAUX, ...PASSAGES, ...SCENES, ...AXES, ...DOMAINES]
+  const textes = [...NIVEAUX, ...PASSAGES, ...SCENES, ...AXES, ...AXES.flatMap((a) => a.propositions), ...DOMAINES]
     .flatMap((x) => [x.titre, x.nom, x.question].filter(Boolean)).concat(METEOS, ELANS);
   for (const texte of textes) {
     assert.ok(!/[–—]/.test(texte), `tiret dans « ${texte} »`);

@@ -51,7 +51,7 @@ try {
   await effacer(['essai-page', 'essai-page-2', 'essai-exemple']);
   await ouvrirPage('essai-page');
   verifier('la page vide invite à commencer', (await page.textContent('#sv')).includes('Raconte ta vie en cinq minutes'));
-  verifier('la page vide affiche zéro partout, sans erreur', (await nombres()) === '0/0/0/0/0/0', await nombres());
+  verifier('la page vide invite sur chaque axe au lieu d’afficher zéro', (await nombres()) === '0/+/+/+/+/+', await nombres());
   let e = await unEcran();
   verifier('la page vide tient sur un écran', !e.v && !e.h && !e.coupes.length, JSON.stringify(e));
   await page.screenshot({ path: join(CAPTURES, 'vide.png') });
@@ -59,32 +59,48 @@ try {
   // ---------- Ajouter ----------
   await page.click('#sv .btn');
   verifier('« Commencer » ouvre le formulaire', await page.isVisible('.dlg'));
-  verifier('onze passages proposés', (await page.$$('.chip')).length === 11);
-  await page.click('.chip:has-text("Un diplôme")'); await page.fill('#p-diplome', '2015');
-  await page.click('.chip:has-text("Mon premier chez-moi")');
+  verifier('onze passages proposés', (await page.$$('.dlg .puce')).length === 11);
+  await page.click('#pu-diplome'); await page.fill('#an-diplome', '2015');
+  await page.click('#pu-premier-chez-moi'); await page.click('#nv-premier-chez-moi-montagne');
   await page.fill('#q-autre', 'Permis de conduire'); await page.fill('#a-autre', '2010'); await page.click('#n-autre-effort');
   await page.screenshot({ path: join(CAPTURES, 'ajouter-1.png') });
   await page.click('#dlg-next');
-  await page.fill('#q-s-beau', 'Le jour où j’ai eu les clés'); await page.fill('#a-s-beau', '2017');
+  verifier('trente propositions à toucher, six par axe', (await page.$$('.dlg .puce')).length === 30 && (await page.$$('.dlg .groupe')).length === 5);
+  await page.click('#pu-amis-longue-date'); await page.fill('#an-amis-longue-date', '2008'); await page.click('#nv-amis-longue-date-montagne');
+  await page.click('#pu-vivre-ailleurs'); await page.fill('#an-vivre-ailleurs', '3000');
+  await page.click('#pu-dire-merci'); await page.click('#pu-dire-merci');
+  verifier('décocher une proposition la referme', !(await page.$('#an-dire-merci')) && (await page.getAttribute('#pu-dire-merci', 'aria-pressed')) === 'false');
+  await page.screenshot({ path: join(CAPTURES, 'ajouter-2.png') });
   await page.click('#dlg-next');
-  await page.fill('#q-x-amis', 'Une amie du lycée'); await page.fill('#a-x-amis', '2008'); await page.click('#n-x-amis-montagne');
-  await page.fill('#q-x-vivre', 'Partir seule'); await page.fill('#a-x-vivre', '3000');
+  await page.fill('#q-s-beau', 'Le jour où j’ai eu les clés'); await page.fill('#a-s-beau', '2017');
   await page.screenshot({ path: join(CAPTURES, 'ajouter-3.png') });
   await page.click('#dlg-next');
   await annonce('6 moments ajoutés');
-  verifier('six moments ajoutés : le total et les axes suivent', (await nombres()) === '6/1/0/0/1/0', await nombres());
+  verifier('six moments ajoutés : le total et les axes suivent', (await nombres()) === '6/1/+/+/1/+', await nombres());
+  verifier('le total dit les passages', (await page.textContent('.cell')).includes('dont 3 passages'), await page.textContent('.cell'));
   verifier('la notification annonce le compte', (await page.textContent('#toast')).includes('6 moments ajoutés'), await page.textContent('#toast'));
   verifier('une année impossible est ignorée, le moment va dans « Un jour »', (await page.$$('#ruban .an')).length === new Date().getFullYear() - 2008 + 1);
   verifier('l’amitié est une montagne, en or', (await page.$$('.cell:nth-child(5) .m.montagne')).length === 1);
-  verifier('la légende compte les niveaux', (await page.textContent('.leg')).replace(/\s+/g, ' ').includes('2 montagnes') && (await page.textContent('.leg')).includes('1 effort'), await page.textContent('.leg'));
+  verifier('la légende compte les niveaux', (await page.textContent('.leg')).replace(/\s+/g, ' ').includes('3 montagnes') && (await page.textContent('.leg')).includes('1 effort'), await page.textContent('.leg'));
 
   // ---------- Persistance ----------
   await ouvrirPage('essai-page');
-  verifier('après rechargement, tout est encore là', (await nombres()) === '6/1/0/0/1/0', await nombres());
+  verifier('après rechargement, tout est encore là', (await nombres()) === '6/1/+/+/1/+', await nombres());
   await page.click('#btn-add');
-  verifier('un passage déjà vécu ne se recoche pas', await page.isDisabled('.chip:has-text("Un diplôme")') && !(await page.isDisabled('.chip:has-text("Me marier")')));
+  verifier('un passage déjà vécu ne se recoche pas', await page.isDisabled('#pu-diplome') && !(await page.isDisabled('#pu-mariage')));
   await page.keyboard.press('Escape');
   verifier('Échap ferme le volet', await page.isHidden('.dlg'));
+
+  // ---------- Une tuile d'axe ouvre ses propositions ----------
+  await page.click('.cell.axe >> nth=1');
+  verifier('la tuile « Vivre hors du travail » ouvre ses six propositions', (await page.textContent('#dlg-t')) === 'Vivre hors du travail' && (await page.$$('.dlg .puce')).length === 6);
+  await page.click('#pu-hors-vacances');
+  await page.screenshot({ path: join(CAPTURES, 'axe.png') });
+  await page.click('#dlg-next'); await annonce('Moment ajouté');
+  verifier('toucher une proposition remplit la tuile', (await nombres()) === '7/1/1/+/1/+', await nombres());
+  await page.click('.cell.axe >> nth=3');
+  verifier('une proposition déjà faite reste cochée et ne se recoche pas', await page.isDisabled('#pu-amis-longue-date'));
+  await page.keyboard.press('Escape');
 
   // ---------- Faire le point ----------
   verifier('sans point, la page le dit', (await page.textContent('#temps')) === 'Pas encore de point');
@@ -96,7 +112,7 @@ try {
   await page.click('#dlg-next'); await annonce('C’est noté');
   verifier('le point s’affiche : météo, carte, phrase', (await page.textContent('#temps')) === 'Grand soleil' && (await page.textContent('#radar')).includes('Santé 9') && (await page.textContent('#synth')) === 'Premier point posé.', `${await page.textContent('#temps')} | ${await page.textContent('#synth')}`);
   verifier('le ciel suit la météo', (await page.getAttribute('html', 'data-meteo')) === '5');
-  verifier('la fierté du mois rejoint la vie', (await nombres()) === '7/1/0/0/1/1', await nombres());
+  verifier('la fierté du mois rejoint la vie', (await nombres()) === '8/1/1/+/1/1', await nombres());
   await page.click('#btn-point');
   verifier('refaire le point repart du dernier', (await page.inputValue('#sl-sante')) === '9');
   await page.click('#dlg-next'); await page.click('.opt:has-text("Orageux")'); await page.click('#dlg-next'); await page.waitForFunction(() => !document.querySelector('#toast.on')); await page.click('#dlg-next');
@@ -106,8 +122,8 @@ try {
 
   // ---------- Tout voir ----------
   await page.click('#btn-parcours');
-  verifier('le parcours liste les sept moments', (await page.$$('.annee li')).length === 7);
-  verifier('le moment sans année est rangé dans « Un jour »', (await page.textContent('.annee:last-child')).includes('Un jour') && (await page.textContent('.annee:last-child')).includes('Partir seule'));
+  verifier('le parcours liste les huit moments', (await page.$$('.annee li')).length === 8);
+  verifier('le moment sans année est rangé dans « Un jour »', (await page.textContent('.annee:last-child')).includes('Un jour') && (await page.textContent('.annee:last-child')).includes('Partir vivre ailleurs'));
   await page.screenshot({ path: join(CAPTURES, 'parcours.png') });
   // Chaque geste écrit dans la base puis redessine : on attend que l'écran ait suivi avant le geste suivant.
   for (let i = 0; i < 3; i += 1) {
@@ -123,10 +139,10 @@ try {
   verifier('une correction s’enregistre et se voit', (await page.textContent('.dlg-body')).includes('Mon permis, enfin') && (await page.textContent('.dlg-body')).includes('À la troisième tentative.') && (await page.$$('.annee li:has-text("Mon permis, enfin") .m.montagne')).length === 1);
   await page.click('.annee li:has-text("Mon balcon fleuri") .mini:has-text("Retirer")');
   await annonce('Moment retiré');
-  verifier('retirer enlève le moment partout', (await page.$$('.annee li')).length === 6 && (await nombres()).startsWith('6/'), await nombres());
+  verifier('retirer enlève le moment partout', (await page.$$('.annee li')).length === 7 && (await nombres()).startsWith('7/'), await nombres());
   await page.click('#toast button');
-  await page.waitForFunction(() => document.querySelectorAll('.annee li').length === 7);
-  verifier('« Annuler » le remet', (await nombres()).startsWith('7/'), await nombres());
+  await page.waitForFunction(() => document.querySelectorAll('.annee li').length === 8);
+  verifier('« Annuler » le remet', (await nombres()).startsWith('8/'), await nombres());
   await page.click('#dlg-next');
 
   // ---------- Sauvegarde ----------
@@ -135,7 +151,7 @@ try {
   const fichier = join(CAPTURES, 'sauvegarde-essai.json');
   await telechargement.saveAs(fichier);
   const contenu = JSON.parse(await readFile(fichier, 'utf8'));
-  verifier('la sauvegarde contient la vie', contenu.format === 'trophees-de-vie' && contenu.magasins.moments.length === 7 && contenu.magasins.points.length === 1, telechargement.suggestedFilename());
+  verifier('la sauvegarde contient la vie', contenu.format === 'trophees-de-vie' && contenu.magasins.moments.length === 8 && contenu.magasins.points.length === 1, telechargement.suggestedFilename());
   await ouvrirPage('essai-page-2');
   await page.click('#btn-sauvegarde');
   await page.setInputFiles('#fichier', { name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('pas du json') });
@@ -143,7 +159,7 @@ try {
   verifier('un fichier illisible est refusé avec une phrase', (await page.textContent('.alerte')) === 'Ce fichier n’est pas lisible.', await page.textContent('.alerte'));
   await page.setInputFiles('#fichier', fichier);
   await annonce('Sauvegarde reprise');
-  verifier('la sauvegarde se reprend ailleurs, à l’identique', (await nombres()) === '7/1/0/0/1/1' && (await page.textContent('#temps')) === 'Orageux' && (await page.$$('#feats li')).length === 3, await nombres());
+  verifier('la sauvegarde se reprend ailleurs, à l’identique', (await nombres()) === '8/1/1/+/1/1' && (await page.textContent('#temps')) === 'Orageux' && (await page.$$('#feats li')).length === 3, await nombres());
 
   // ---------- Une vie d'exemple : tailles, contrastes, captures ----------
   await page.evaluate(async () => {

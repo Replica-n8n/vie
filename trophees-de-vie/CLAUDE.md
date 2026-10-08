@@ -38,9 +38,13 @@ Ce n'est plus une PWA (décidé le 2026-10-05).
 ## Pièges
 
 - GitHub Pages garde un fichier dix minutes. `index.html` appelle `app.css?v=N` et
-  `app.js?v=N` : monter N à chaque livraison. Les modules importés par `app.js`
-  ne portent pas ce numéro, donc après une livraison l'ancien et le nouveau peuvent
-  se mélanger pendant dix minutes.
+  `app.js?v=N`, et `app.js` importe ses quatre modules avec le même `?v=N` : monter
+  N aux SEPT endroits à chaque livraison, sinon l'ancien et le nouveau se mélangent.
+- Un identifiant de passage ou de proposition ne se renomme jamais : les moments
+  gardés dans son navigateur le portent, et c'est lui qui empêche de recocher.
+- Tout ce qui remplit la page doit pouvoir se toucher sans rien écrire. Les questions
+  ouvertes restent, mais en plus : sur sa vraie page, elle n'a répondu qu'aux
+  questions faciles et cinq tuiles sur six sont restées vides (2026-10-08).
 - `?base=nom` ouvre une autre base : c'est ce qui permet aux essais de ne jamais
   toucher à la vraie.
 
