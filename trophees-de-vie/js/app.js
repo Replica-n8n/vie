@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=5';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE } from './config/vie.js?v=5';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=5';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, ruban, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=5';
+import { ouvrir, demanderPersistance } from './stockage.js?v=6';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE } from './config/vie.js?v=6';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=6';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, ruban, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=6';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);

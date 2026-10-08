@@ -10,20 +10,21 @@
 :root{
   --body:"Atkinson Hyperlegible",Verdana,system-ui,sans-serif;
   --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
-  --bg:#1F2A44; --ink:#FFFFFF; --muted:#E6E5F0; --line:rgba(255,255,255,.28); --or:#F7CF78; --sur-or:#3A2A00; --nuit:#27304F;
-  --verre:rgba(22,26,48,.48); --verre-opaque:#2A2F52; --volet:#232A4A; --volet-point:#2E2740;
-  --c1:#1D2742; --c2:#3A4070; --c3:#8A6480; --c4:#C99679;
+  --bg:#1E4C78; --ink:#FFFFFF; --muted:#E6E5F0; --line:rgba(255,255,255,.28); --or:#F7CF78; --sur-or:#3A2A00; --nuit:#1D3A5C;
+  --verre:rgba(10,36,64,.66); --verre-opaque:#274B6E; --volet:#1B3554; --volet-point:#3A3140;
+  /* Le ciel : un coucher de soleil sur la mer (Sophie aime la mer). Bleu océan, corail, sable. */
+  --c1:#1E4C78; --c2:#2F719A; --c3:#F2A680; --c4:#F8D592;
   color-scheme:dark;
 }
-:root[data-meteo="5"]{ --c1:#20305A; --c2:#44508C; --c3:#B07486; --c4:#E3AC7C }
-:root[data-meteo="3"]{ --c1:#1E2640; --c2:#383E66; --c3:#6E5C78; --c4:#9A8580 }
-:root[data-meteo="2"]{ --c1:#1C2336; --c2:#30364F; --c3:#4D4E66; --c4:#6C6A78 }
-:root[data-meteo="1"]{ --c1:#171C2A; --c2:#252A3B; --c3:#353A4C; --c4:#474C5C }
+:root[data-meteo="5"]{ --c1:#205488; --c2:#33789F; --c3:#F7AE86; --c4:#FBDB98 }
+:root[data-meteo="3"]{ --c1:#254A6B; --c2:#3F6F8A; --c3:#B8978A; --c4:#CDBB9A }
+:root[data-meteo="2"]{ --c1:#27425A; --c2:#476A7E; --c3:#7F8088; --c4:#9A978E }
+:root[data-meteo="1"]{ --c1:#1F3144; --c2:#33495A; --c3:#4A5560; --c4:#5E666C }
 
 *{box-sizing:border-box}
 [hidden]{display:none !important}
 html,body{height:100%}
-body{margin:0;background:linear-gradient(155deg,var(--c1) 0%,var(--c2) 38%,var(--c3) 70%,var(--c4) 100%) fixed var(--bg);color:var(--ink);font:16px/1.4 var(--body)}
+body{margin:0;background:linear-gradient(155deg,var(--c1) 0%,var(--c2) 46%,var(--c3) 78%,var(--c4) 100%) fixed var(--bg);color:var(--ink);font:16px/1.4 var(--body)}
 h1,h2,p,ul{margin:0}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer}
