@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=4';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE } from './config/vie.js?v=4';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=4';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, ruban, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=4';
+import { ouvrir, demanderPersistance } from './stockage.js?v=5';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE } from './config/vie.js?v=5';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=5';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, ruban, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=5';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -255,9 +255,9 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && flux) fe
 
 const anneeValide = (v) => { const n = Number(v); return v !== '' && v != null && Number.isInteger(n) && n >= 1900 && n <= an() ? n : null; };
 
-function champAnnee(id, valeur, libelle, regler) {
+function champAnnee(id, valeur, libelle, regler, invite = 'Année') {
   const a = el('input', 'field an-in');
-  a.type = 'number'; a.inputMode = 'numeric'; a.id = id; a.placeholder = 'Année'; a.value = valeur ?? '';
+  a.type = 'number'; a.inputMode = 'numeric'; a.id = id; a.placeholder = invite; a.value = valeur ?? '';
   a.setAttribute('aria-label', libelle);
   a.addEventListener('input', () => regler(a.value));
   return a;
@@ -270,8 +270,8 @@ function medailles(id, reponse) {
   niv.setAttribute('aria-label', 'La médaille que tu lui donnes');
   for (const n of NIVEAUX) {
     const b = bouton(null, null, reponse.niveau === n.id);
-    b.id = `${id}-${n.id}`; b.title = n.nom; b.setAttribute('aria-label', n.nom);
-    b.append(coupe(n.id));
+    b.id = `${id}-${n.id}`;
+    b.append(coupe(n.id), n.nom);
     b.addEventListener('click', () => { reponse.niveau = n.id; for (const o of niv.children) o.setAttribute('aria-pressed', String(o === b)); });
     niv.append(b);
   }
@@ -295,9 +295,11 @@ function question(corps, id, texte, reponse, { aide, sansNiveau } = {}) {
   corps.append(q);
 }
 
-// Des réussites à toucher. Cochée, une réussite demande l'année, et la médaille
-// seulement quand aucun chiffre ne la fixe. Déjà dans la vie, elle reste cochée.
-function puces(corps, reussites, coches, deja) {
+// Des réussites à toucher, autant qu'on veut. Cochée, une réussite ne demande que
+// l'année, et seulement si c'est un événement. Sa médaille est celle de sa rareté ou
+// celle proposée : elle se change ensuite dans « Tout voir ». Déjà dans la vie, elle
+// reste cochée.
+function puces(corps, reussites, coches, deja, quandChange) {
   const c = el('div', 'chips');
   const dessinerUne = (r) => {
     const boite = el('div', 'puce');
@@ -308,14 +310,12 @@ function puces(corps, reussites, coches, deja) {
     if (fait) { b.disabled = true; b.title = 'Déjà dans ta vie'; }
     boite.append(b);
     if (fait || reponse) boite.classList.add('on');
-    if (reponse) {
-      boite.append(champAnnee(`an-${r.id}`, reponse.annee, `Année de : ${r.titre}`, (v) => { reponse.annee = v; }));
-      if (r.rarete == null && !r.parAge) boite.append(medailles(`nv-${r.id}`, reponse));
-    }
+    if (reponse && !r.sansAnnee) boite.append(champAnnee(`an-${r.id}`, reponse.annee, `Année de : ${r.titre}, facultative`, (v) => { reponse.annee = v; }, 'Année (facultatif)'));
     b.addEventListener('click', () => {
       if (coches.has(r.id)) coches.delete(r.id); else coches.set(r.id, { annee: '', niveau: r.defaut ?? 'argent' });
       const neuve = dessinerUne(r);
       boite.replaceWith(neuve);
+      quandChange?.();
       (neuve.querySelector('input') ?? neuve.querySelector('button')).focus();
     });
     return boite;
@@ -361,7 +361,7 @@ function champNaissance(corps, saisie) {
   corps.append(q);
 }
 
-async function enregistrer(nouveaux, naissance) {
+async function enregistrer(nouveaux, naissance, avecBilan = false) {
   for (const m of nouveaux) await etat.base.ecrire('moments', m);
   const neeEn = naissance ? anneeValide(naissance.valeur) : null;
   const change = neeEn != null && neeEn !== etat.naissance;
@@ -370,8 +370,26 @@ async function enregistrer(nouveaux, naissance) {
   if (!nouveaux.length && !change) return;
   await rafraichir();
   demanderPersistance();
-  if (nouveaux.length) annoncer(nouveaux.length > 1 ? `${nouveaux.length} trophées ajoutés` : 'Trophée ajouté', `${trophees(etat.vus.length)} en tout`);
+  if (nouveaux.length && avecBilan) ouvrirBilan(nouveaux.length);
+  else if (nouveaux.length) annoncer(nouveaux.length > 1 ? `${nouveaux.length} trophées ajoutés` : 'Trophée ajouté', `${trophees(etat.vus.length)} en tout`);
   else annoncer('C’est noté', 'Tes trophées sont situés à ton âge');
+}
+
+// La clôture du formulaire : ce qu'on vient de poser, et quoi faire ensuite.
+function ouvrirBilan(ajoutes) {
+  const c = comptes(etat.vus);
+  ouvrirVolet('add', [{ label: pluriel(ajoutes, ['trophée ajouté', 'trophées ajoutés']), titre: 'C’est ta vie jusqu’ici', dessiner(corps) {
+    const b = el('div', 'bilan');
+    const leg = el('span', 'leg');
+    for (const n of [...NIVEAUX].reverse()) {
+      if (!c[n.id]) continue;
+      const i = el('span');
+      i.append(coupe(n.id), `${c[n.id]} en ${n.nom.toLowerCase()}`);
+      leg.append(i);
+    }
+    b.append(el('span', 'num', String(c.total)), el('span', 'n', c.total > 1 ? 'trophées' : 'trophée'), leg);
+    corps.append(b, el('p', 'aide', 'Ta page est à jour. Reviens-y quand il se passe quelque chose dans ta vie.'));
+  } }], 'Voir ma page', async () => fermerVolet());
 }
 
 function ouvrirAjout() {
@@ -379,19 +397,21 @@ function ouvrirAjout() {
   const coches = new Map(); // identifiant → { annee, niveau }
   const naissance = { valeur: etat.naissance ?? '' };
   const moitie = Math.ceil(CATEGORIES.length / 2);
+  const compter = () => { $('dlg-step').textContent = `Ta vie · ${flux.i + 1} sur 2${coches.size ? ` · ${pluriel(coches.size, ['cochée', 'cochées'])}` : ''}`; };
   const ecran = (cats, avecNaissance) => (corps) => {
     if (avecNaissance) champNaissance(corps, naissance);
     for (const cat of cats) {
       const g = el('div', 'groupe');
       g.append(el('h3', 'lab', cat.nom));
-      puces(g, groupe(cat), coches, deja);
+      puces(g, groupe(cat), coches, deja, compter);
       corps.append(g);
     }
+    compter();
   };
   ouvrirVolet('add', [
-    { label: 'Ta vie', titre: 'Qu’as-tu déjà fait ?', dessiner: ecran(CATEGORIES.slice(0, moitie), true) },
-    { label: 'Ta vie', titre: 'Et aussi ?', dessiner: ecran(CATEGORIES.slice(moitie), false) },
-  ], 'Ajouter à ma vie', () => enregistrer(momentsCoches(coches), naissance));
+    { label: 'Ta vie', titre: 'Coche tout ce que tu as déjà fait', dessiner: ecran(CATEGORIES.slice(0, moitie), true) },
+    { label: 'Ta vie', titre: 'Et ça aussi ?', dessiner: ecran(CATEGORIES.slice(moitie), false) },
+  ], 'Ajouter à ma vie', () => enregistrer(momentsCoches(coches), naissance, true));
 }
 
 // Une catégorie seule, ouverte depuis sa tuile.

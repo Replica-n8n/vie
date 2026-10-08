@@ -26,6 +26,8 @@ export const CATEGORIES = [
 // `parAge` : la même part selon l'âge au moment de la réussite (il faut l'année de
 // naissance) ; la dernière tranche sert quand l'âge est inconnu.
 // `defaut` : la médaille proposée quand aucun chiffre fiable n'existe.
+// `sansAnnee` : ce n'est pas un événement daté, le formulaire ne demande pas d'année
+// (« une amitié de longue date : l'année de rencontre ? », premier essai utilisatrice).
 //
 // ⚠️ Les chiffres ne viennent pas tous de la même population (OCDE, Union
 // européenne, France, monde) : elle a demandé l'OCDE, et on a pris le meilleur
@@ -40,13 +42,13 @@ export const REUSSITES = [
   { id: 'doctorat', titre: 'Un doctorat', categorie: 'apprendre', rarete: 0.012 },
   // Eurobaromètre spécial 540 (2024), Union européenne : 28 % tiennent une
   // conversation dans deux langues étrangères, 11 % dans trois.
-  { id: 'langues-2', titre: 'Parler deux langues étrangères', categorie: 'apprendre', rarete: 0.28 },
-  { id: 'langues-3', titre: 'Parler trois langues étrangères', categorie: 'apprendre', rarete: 0.11 },
+  { id: 'langues-2', titre: 'Parler deux langues étrangères', categorie: 'apprendre', rarete: 0.28, sansAnnee: true },
+  { id: 'langues-3', titre: 'Parler trois langues étrangères', categorie: 'apprendre', rarete: 0.11, sansAnnee: true },
   { id: 'reprendre-etudes', titre: 'Reprendre des études', categorie: 'apprendre', defaut: 'argent' },
 
   { id: 'premier-argent', titre: 'Mon premier argent gagné', categorie: 'travailler', defaut: 'bronze' },
   { id: 'premier-emploi', titre: 'Premier emploi', categorie: 'travailler', defaut: 'bronze' },
-  { id: 'trouver-voie', titre: 'Trouver ma voie', categorie: 'travailler', defaut: 'argent' },
+  { id: 'trouver-voie', titre: 'Trouver ma voie', categorie: 'travailler', defaut: 'argent', sansAnnee: true },
   { id: 'changer-metier', titre: 'Changer de métier', categorie: 'travailler', defaut: 'argent' },
   // OCDE, « The job quality of self-employment in Europe » (2025) : 13 % des
   // personnes en emploi sont à leur compte, en Europe, en 2021.
@@ -61,7 +63,7 @@ export const REUSSITES = [
   // Insee, début 2024, France : 17,2 % des ménages de moins de 30 ans possèdent leur
   // résidence principale, 47,7 % des 30-39 ans, 57,2 % de l'ensemble des ménages.
   { id: 'proprietaire', titre: 'Acheter mon logement', categorie: 'installer', parAge: [{ avant: 30, part: 0.17 }, { avant: 40, part: 0.48 }, { part: 0.57 }] },
-  { id: 'epargne', titre: 'Mettre de l’argent de côté', categorie: 'installer', defaut: 'bronze' },
+  { id: 'epargne', titre: 'Mettre de l’argent de côté', categorie: 'installer', defaut: 'bronze', sansAnnee: true },
 
   { id: 'grand-voyage', titre: 'Un grand voyage', categorie: 'partir', defaut: 'argent' },
   { id: 'voyager-seule', titre: 'Voyager seule', categorie: 'partir', defaut: 'argent' },
@@ -72,16 +74,15 @@ export const REUSSITES = [
   { id: 'tomber-amoureuse', titre: 'Tomber amoureuse', categorie: 'aimer', defaut: 'bronze' },
   { id: 'mariage', titre: 'Me marier', categorie: 'aimer', defaut: 'bronze' },
   { id: 'enfant', titre: 'Avoir un enfant', categorie: 'aimer', defaut: 'bronze' },
-  { id: 'amis-longue-date', titre: 'Garder une amitié de longue date', categorie: 'aimer', defaut: 'argent' },
-  { id: 'amis-etre-la', titre: 'Être là pour un proche dans un moment dur', categorie: 'aimer', defaut: 'argent' },
+  { id: 'amis-longue-date', titre: 'Garder une amitié de longue date', categorie: 'aimer', defaut: 'argent', sansAnnee: true },
+  { id: 'amis-etre-la', titre: 'Être là pour un proche dans un moment dur', categorie: 'aimer', defaut: 'argent', sansAnnee: true },
 
   { id: 'nager', titre: 'Apprendre à nager', categorie: 'depasser', defaut: 'bronze' },
   { id: 'dix-km', titre: 'Courir 10 km', categorie: 'depasser', defaut: 'bronze' },
   // Aucune statistique officielle : des estimations de blogs seulement. Pas de chiffre affiché.
   { id: 'marathon', titre: 'Courir un marathon', categorie: 'depasser', defaut: 'or' },
   { id: 'arreter-fumer', titre: 'Arrêter de fumer', categorie: 'depasser', defaut: 'argent' },
-  { id: 'creer', titre: 'Montrer ce que je crée', categorie: 'depasser', defaut: 'argent' },
-  { id: 'rebondir', titre: 'Me relever d’un coup dur', categorie: 'depasser', defaut: 'argent' },
+  { id: 'creer', titre: 'Montrer ce que je crée', categorie: 'depasser', defaut: 'argent', sansAnnee: true },
 ];
 
 // Les propositions de la version 2 qui disaient la même chose sous un autre nom.

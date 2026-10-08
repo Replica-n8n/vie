@@ -64,24 +64,34 @@ try {
   // ---------- Ajouter : deux écrans, tout se touche ----------
   await page.click('#sv .btn');
   verifier('« Commencer » ouvre le formulaire, trois catégories par écran', await page.isVisible('.dlg') && (await page.$$('.dlg .groupe')).length === 3);
+  verifier('le titre dit qu’on peut tout cocher', (await texte('#dlg-t')) === 'Coche tout ce que tu as déjà fait');
   await page.fill('#naissance', '1992');
   await page.click('#pu-master'); await page.fill('#an-master', '2015');
-  verifier('une réussite qui a un chiffre ne demande pas de médaille', !(await page.$('#nv-master-or')));
+  verifier('l’année est annoncée comme facultative', (await page.getAttribute('#an-master', 'placeholder')) === 'Année (facultatif)');
   await page.click('#pu-proprietaire'); await page.fill('#an-proprietaire', '2021');
   await page.click('#pu-premier-emploi'); await page.fill('#an-premier-emploi', '2015');
-  verifier('une réussite sans chiffre propose sa médaille, qu’on peut changer', (await page.getAttribute('#nv-premier-emploi-bronze', 'aria-pressed')) === 'true');
+  verifier('une réussite cochée ne demande aucune médaille', (await page.$$('.dlg .puce .niv')).length === 0);
+  verifier('l’en-tête compte ce qui est coché', (await texte('#dlg-step')) === 'Ta vie · 1 sur 2 · 3 cochées', await texte('#dlg-step'));
+  await page.click('#pu-langues-2');
+  verifier('ce qui n’est pas un événement ne demande pas d’année', !(await page.$('#an-langues-2')) && (await page.getAttribute('#pu-langues-2', 'aria-pressed')) === 'true');
+  await page.click('#pu-langues-2');
   await page.click('#pu-trouver-voie'); await page.click('#pu-trouver-voie');
   verifier('décocher une réussite la referme', !(await page.$('#an-trouver-voie')) && (await page.getAttribute('#pu-trouver-voie', 'aria-pressed')) === 'false');
   await page.screenshot({ path: join(CAPTURES, 'ajouter-1.png') });
   await page.click('#dlg-next');
   await page.click('#pu-vivre-etranger'); await page.fill('#an-vivre-etranger', '3000');
   await page.click('#pu-marathon'); await page.fill('#an-marathon', '2008');
-  await page.click('#pu-enfant'); await page.click('#nv-enfant-or');
+  await page.click('#pu-enfant');
+  verifier('« Me relever d’un coup dur » n’est plus proposé', !(await page.$('#pu-rebondir')));
   await page.screenshot({ path: join(CAPTURES, 'ajouter-2.png') });
   await page.click('#dlg-next');
-  await annonce('6 trophées ajoutés');
+  await page.waitForFunction(() => document.querySelector('#dlg-t')?.textContent === 'C’est ta vie jusqu’ici' && !document.getElementById('scrim').hidden);
+  verifier('le formulaire se conclut : le compte, les médailles, et quoi faire ensuite', (await texte('.bilan')).replace(/ /g, '') === '6trophées4enor2enbronze' && (await texte('#dlg-step')) === '6 trophées ajoutés' && (await texte('.dlg .aide')).includes('Reviens-y'), `${await texte('.bilan')} | ${await texte('#dlg-step')}`);
+  await page.screenshot({ path: join(CAPTURES, 'bilan.png') });
+  await page.click('#dlg-next');
+  verifier('« Voir ma page » referme', await page.isHidden('.dlg'));
   verifier('six trophées ajoutés : le total et les catégories suivent', (await nombres()) === '6/1/1/1/1/1/1', await nombres());
-  verifier('la légende compte les médailles : la rareté décide, sinon le choix', (await texte('.leg')) === '5 en or1 en bronze' || (await texte('.leg')) === '5 en or 1 en bronze', await texte('.leg'));
+  verifier('la légende compte les médailles : la rareté décide, sinon le choix', (await texte('.leg')).replace(/ /g, '') === '4enor2enbronze', await texte('.leg'));
   verifier('acheté à 29 ans : en or, grâce à l’année de naissance', (await page.$$('.cell:nth-child(4) .m.or')).length === 1);
   verifier('une année impossible est ignorée, le ruban va de 2008 à aujourd’hui', (await page.$$('#ruban .an')).length === AN - 2008 + 1);
 
@@ -97,6 +107,7 @@ try {
   // ---------- Une tuile ouvre sa catégorie ----------
   await page.click('.cell.axe >> nth=0');
   verifier('la tuile « Apprendre » ouvre ses réussites', (await texte('#dlg-t')) === 'Apprendre' && (await page.$$('.dlg .puce')).length === 6);
+  verifier('là où l’on choisit encore la médaille, chaque coupe porte son nom', (await texte('#n-libre-bronze')) === 'Bronze' && (await texte('#n-libre-or')) === 'Or');
   await page.click('#pu-diplome'); await page.fill('#an-diplome', '2013');
   await page.fill('#q-libre', 'Le bac'); await page.fill('#a-libre', '2010'); await page.click('#n-libre-bronze');
   await page.screenshot({ path: join(CAPTURES, 'categorie.png') });

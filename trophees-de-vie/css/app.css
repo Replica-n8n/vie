@@ -220,3 +220,17 @@ button.cell:hover{border-color:rgba(255,255,255,.6)}
 .cell{padding-inline:clamp(12px,1.1vw,22px)}
 .cell .num{font-size:clamp(40px,4.6vw,76px)}
 @media (max-width:900px){ .ax{grid-template-columns:repeat(2,minmax(0,1fr))} }
+
+/* Premier essai par une vraie utilisatrice (v5) */
+/* une réussite cochée porte une coche : on voit qu'on peut en choisir plusieurs */
+.puce.on .puce-t::before{content:"✓";margin-right:8px}
+.puce input{width:164px}
+/* là où l'on choisit encore la médaille, chaque coupe porte son nom */
+.niv{flex-wrap:wrap}
+.niv button,.puce .niv button{width:auto;height:50px;padding:0 14px;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700}
+/* la clôture du formulaire */
+.bilan{display:grid;justify-items:center;gap:6px;padding:8px 0 4px;text-align:center}
+.bilan .num{font:300 104px/1 var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.bilan .n{font-weight:700}
+.bilan .leg{justify-content:center;font-size:16px;margin-top:8px;padding:0}
+.bilan + .aide{text-align:center;font-size:16px}
