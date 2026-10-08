@@ -12,14 +12,18 @@ export const NIVEAUX = [
   { id: 'or', nom: 'Or' },
 ];
 
+// `badge` : le nom gagné quand la catégorie compte au moins trois trophées.
 export const CATEGORIES = [
-  { id: 'apprendre', nom: 'Apprendre' },
-  { id: 'travailler', nom: 'Travailler' },
-  { id: 'installer', nom: 'S’installer' },
-  { id: 'partir', nom: 'Partir' },
-  { id: 'aimer', nom: 'Aimer' },
-  { id: 'depasser', nom: 'Se dépasser' },
+  { id: 'apprendre', nom: 'Apprendre', badge: 'Tête bien faite' },
+  { id: 'travailler', nom: 'Travailler', badge: 'Bâtisseuse' },
+  { id: 'installer', nom: 'S’installer', badge: 'Bien ancrée' },
+  { id: 'partir', nom: 'Partir', badge: 'Globe-trotteuse' },
+  { id: 'aimer', nom: 'Aimer', badge: 'Grand cœur' },
+  { id: 'depasser', nom: 'Se dépasser', badge: 'Sans limites' },
 ];
+
+// Le badge de celle qui a au moins un trophée dans chaque catégorie.
+export const BADGE_TOUT = 'Touche-à-tout';
 
 // `rarete` : la part des adultes qui l'ont fait, entre 0 et 1. La page n'affiche
 // que « Top N % », et seulement pour l'or : la source reste ici, pas à l'écran.

@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=7';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE } from './config/vie.js?v=7';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=7';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=7';
+import { ouvrir, demanderPersistance } from './stockage.js?v=8';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=8';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=8';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=8';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -88,6 +88,7 @@ function dessinerChiffres() {
   const ax = $('axes');
   ax.textContent = '';
   const c = comptes(etat.vus);
+  const gagnes = badges(etat.vus, CATEGORIES, BADGE_TOUT);
   const total = el('div', 'cell');
   total.append(el('span', 'num', String(c.total)), el('span', 'n', c.total > 1 ? 'trophées' : 'trophée'));
   const leg = el('span', 'leg');
@@ -98,16 +99,31 @@ function dessinerChiffres() {
     leg.append(i);
   }
   total.append(leg);
+  if (gagnes.some((g) => g.id === 'tout')) total.append(el('span', 'badge', BADGE_TOUT));
   ax.append(total);
-  // Chaque catégorie est un bouton : il ouvre ses réussites. Vide, il montre un « + »
-  // plutôt qu'un zéro, parce qu'une catégorie pas encore remplie n'est pas un échec.
+  // Chaque catégorie NOMME ses réussites, les plus rares d'abord : un bilan se lit, il ne
+  // se compte pas (mesuré : la page ne nommait qu'une réussite sur toute une vie). La tuile
+  // reste un bouton qui ouvre ses réussites. Vide, elle montre un « + », pas un zéro.
+  // Sur un écran bas, deux noms par tuile : la page doit rester sur un écran.
+  const montres = innerHeight < 800 ? 2 : 3;
   for (const cat of parCategorie(etat.vus, CATEGORIES)) {
-    const d = bouton('cell axe');
-    const pts = el('span', 'pts');
-    for (const t of cat.trophees) pts.append(coupe(t.niveau));
-    const vide = !cat.trophees.length;
-    d.append(el('span', `num${vide ? ' plus' : ''}`, vide ? '+' : String(cat.trophees.length)), el('span', 'n', cat.nom), pts);
-    d.setAttribute('aria-label', vide ? `${cat.nom} : ajouter` : `${cat.nom} : ${trophees(cat.trophees.length)}, ajouter`);
+    const d = bouton('cell axe cat');
+    const n = cat.trophees.length;
+    const tete = el('span', 'cat-t');
+    const badge = gagnes.find((g) => g.id === cat.id);
+    tete.append(el('span', 'cat-n', cat.nom), el('span', 'nb', n ? String(n) : '+'));
+    if (badge) tete.append(el('span', 'badge', badge.nom));
+    const liste = el('span', 'cat-l');
+    for (const t of plusRares(cat.trophees, montres)) {
+      const ligne = el('span', 'cat-i');
+      const nom = el('span', 'nomme', t.titre);
+      nom.title = t.titre;
+      ligne.append(coupe(t.niveau), nom);
+      liste.append(ligne);
+    }
+    d.append(tete, liste);
+    if (n > montres) d.append(el('span', 'reste', `et ${n - montres} autre${n - montres > 1 ? 's' : ''}`));
+    d.setAttribute('aria-label', n ? `${cat.nom} : ${trophees(n)}${badge ? `, badge ${badge.nom}` : ''}. Ajouter` : `${cat.nom} : ajouter`);
     d.addEventListener('click', () => ouvrirCategorie(cat));
     ax.append(d);
   }
@@ -152,18 +168,22 @@ function dessinerAges(vie) {
   $('ans').after(b);
 }
 
+// Tant que rien n'est épinglé, le bloc se remplit seul avec les trophées les plus rares :
+// vide, il privait la page de ce qui donne le plus la sensation de bilan.
 function dessinerHautsFaits() {
   const f = $('feats');
   f.textContent = '';
-  const hauts = hautsFaits(etat.vus);
-  for (const t of hauts) {
+  const epingles = hautsFaits(etat.vus);
+  const montres = epingles.length ? epingles : plusRares(etat.vus);
+  $('hf-t').textContent = epingles.length ? 'Hauts faits' : montres.some((t) => t.niveau === 'or') ? 'Tes plus rares' : montres.length ? 'Tes derniers trophées' : 'Hauts faits';
+  for (const t of montres) {
     const li = el('li');
     const d = el('div');
     d.append(el('strong', null, t.titre), el('span', 'petit', [t.annee ? String(t.annee) : 'un jour', t.top].filter(Boolean).join(' · ')));
     li.append(coupe(t.niveau, true), d);
     f.append(li);
   }
-  $('feats-vide').hidden = hauts.length > 0;
+  $('feats-vide').hidden = montres.length > 0;
 }
 
 function radar(svg, maintenant, avant) {
@@ -216,7 +236,8 @@ function dessiner() {
   heure();
   dessinerSouvenir();
   dessinerChiffres();
-  const vie = ruban(etat.vus, an());
+  const annees = etat.vus.filter((t) => t.annee).map((t) => t.annee);
+  const vie = ruban(etat.vus, annees.length ? Math.max(...annees) : an());
   dessinerRuban(vie);
   dessinerAges(vie);
   dessinerHautsFaits();
@@ -429,6 +450,12 @@ function ouvrirBilan(ajoutes) {
       leg.append(i);
     }
     b.append(el('span', 'num', String(c.total)), el('span', 'n', c.total > 1 ? 'trophées' : 'trophée'), leg);
+    const gagnes = badges(etat.vus, CATEGORIES, BADGE_TOUT);
+    if (gagnes.length) {
+      const l = el('span', 'badges');
+      for (const g of gagnes) l.append(el('span', 'badge', g.nom));
+      b.append(l);
+    }
     corps.append(b, el('p', 'aide', 'Ta page est à jour. Reviens-y quand il se passe quelque chose dans ta vie.'));
   } }], 'Voir ma page', async () => fermerVolet());
 }
@@ -652,6 +679,9 @@ $('btn-sauvegarde').addEventListener('click', ouvrirSauvegarde);
 
 heure();
 setInterval(heure, 20000);
+// Le nombre de noms par tuile dépend de la hauteur de la fenêtre.
+let bas = innerHeight < 800;
+addEventListener('resize', () => { if ((innerHeight < 800) !== bas && etat.base) { bas = innerHeight < 800; dessinerChiffres(); } });
 // Au passage de minuit, le souvenir du jour change sans qu'on recharge la page.
 let jourAffiche = jourLocal();
 setInterval(() => { if (jourLocal() !== jourAffiche && !flux) { jourAffiche = jourLocal(); dessiner(); } }, 60000);

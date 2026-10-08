@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { NIVEAUX, CATEGORIES, REUSSITES, ALIAS, CATALOGUE } from '../js/config/vie.js';
+import { NIVEAUX, CATEGORIES, REUSSITES, ALIAS, CATALOGUE, BADGE_TOUT } from '../js/config/vie.js';
 import { DOMAINES, METEOS, ELANS } from '../js/config/domaines.js';
 import { MOMENTS, POINTS, NAISSANCE } from './exemple.js';
 import {
-  SEUILS, definition, rarete, medaille, top, lire, dejaFaites, comptes, parCategorie, hautsFaits, ruban, decennies, souvenirDuJour,
+  SEUILS, definition, rarete, medaille, top, lire, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour,
   decalerMois, dernierPoint, pointDavant, ecartsRoue, phraseRoue,
 } from '../js/coeur.js';
 
@@ -164,6 +164,26 @@ test('une catégorie choisie à la main passe avant celle de la réussite', () =
 test('les hauts faits : trois au plus, les plus anciens d’abord', () => {
   assert.deepEqual(hautsFaits(VUS).map((t) => t.id), ['master', 'montreal', 'achat']);
   assert.equal(hautsFaits(VUS.map((t) => ({ ...t, hautFait: true }))).length, 3);
+});
+
+test('les trophées à nommer d’abord : l’or le plus rare en tête', () => {
+  assert.deepEqual(plusRares(VUS).map((t) => t.id), ['montreal', 'compte', 'master']);
+  assert.deepEqual(plusRares(VUS, 5).map((t) => t.id), ['montreal', 'compte', 'master', 'achat', 'semi'], 'un or sans chiffre passe après ceux qui en ont un');
+  const bronzes = [{ id: 'a', niveau: 'bronze', part: null, annee: 2010 }, { id: 'b', niveau: 'bronze', part: null, annee: 2020 }];
+  assert.deepEqual(plusRares(bronzes).map((t) => t.id), ['b', 'a'], 'à médaille égale, le plus récent d’abord');
+  assert.deepEqual(plusRares([]), []);
+});
+
+test('les badges : trois trophées dans une catégorie, ou un dans chacune', () => {
+  for (const c of CATEGORIES) assert.ok(c.badge, `pas de badge pour ${c.id}`);
+  // l'exemple compte 4, 4, 3, 2, 2 et 5 trophées par catégorie
+  assert.deepEqual(badges(VUS, CATEGORIES, BADGE_TOUT).map((b) => b.id), ['apprendre', 'travailler', 'installer', 'depasser', 'tout']);
+  assert.equal(badges(VUS, CATEGORIES, BADGE_TOUT).at(-1).nom, 'Touche-à-tout');
+  const sansAimer = VUS.filter((t) => t.categorie !== 'aimer');
+  assert.ok(!badges(sansAimer, CATEGORIES, BADGE_TOUT).some((b) => b.id === 'tout'), 'une catégorie vide : pas de Touche-à-tout');
+  const deux = VUS.filter((t) => t.categorie === 'partir');
+  assert.deepEqual(badges(deux, CATEGORIES, BADGE_TOUT), [], 'deux trophées ne suffisent pas');
+  assert.deepEqual(badges([], CATEGORIES, BADGE_TOUT), []);
 });
 
 // ---------- Ruban ----------

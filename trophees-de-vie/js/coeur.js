@@ -114,6 +114,25 @@ export function parCategorie(trophees, categories) {
 
 export const hautsFaits = (trophees) => trophees.filter((t) => t.hautFait).sort(parTemps).slice(0, 3);
 
+// Du plus rare au plus courant : l'or d'abord, puis la plus petite part, puis le plus récent.
+const RANG = { or: 0, argent: 1, bronze: 2 };
+function parValeur(a, b) { return RANG[a.niveau] - RANG[b.niveau] || (a.part ?? 1) - (b.part ?? 1) || (b.annee ?? 0) - (a.annee ?? 0); }
+
+/** Les trophées à nommer en premier : c'est eux que la page écrit en toutes lettres. */
+export const plusRares = (trophees, n = 3) => [...trophees].sort(parValeur).slice(0, n);
+
+/**
+ * Les badges gagnés : un par catégorie qui compte au moins `seuil` trophées, et
+ * `nomTout` (identifiant 'tout') quand chaque catégorie en a au moins un.
+ * @returns {{id:string, nom:string}[]}
+ */
+export function badges(trophees, categories, nomTout, seuil = 3) {
+  const combien = (c) => trophees.filter((t) => t.categorie === c.id).length;
+  const gagnes = categories.filter((c) => c.badge && combien(c) >= seuil).map((c) => ({ id: c.id, nom: c.badge }));
+  if (nomTout && categories.every((c) => combien(c) > 0)) gagnes.push({ id: 'tout', nom: nomTout });
+  return gagnes;
+}
+
 // Le moment d'un moment, comparable par ordre alphabétique. Une année seule se
 // range avant tous les jours de cette année, et « sans année » à la fin.
 const instant = (m) => m.date ?? (m.annee ? `${m.annee}-00-00` : '9999');

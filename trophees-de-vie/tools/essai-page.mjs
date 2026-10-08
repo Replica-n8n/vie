@@ -43,7 +43,7 @@ const ouvrirPage = async (base) => { await page.goto(`${ORIGINE}/index.html?base
 const effacer = async () => { await page.goto(`${ORIGINE}/icone.svg`); await page.evaluate((ns) => Promise.all(ns.map((n) => new Promise((ok) => { const q = indexedDB.deleteDatabase(n); q.onsuccess = q.onerror = q.onblocked = () => ok(); }))), BASES); };
 // Le volet se ferme avant que la page soit redessinée : on attend l'annonce, qui vient en dernier.
 const annonce = (texte) => page.waitForFunction((t) => document.querySelector('#toast.on')?.textContent.includes(t), texte);
-const nombres = () => page.$$eval('.cell .num', (xs) => xs.map((x) => x.textContent).join('/'));
+const nombres = () => page.$$eval('.cell .num, .cell .nb', (xs) => xs.map((x) => x.textContent).join('/'));
 const texte = (sel) => page.textContent(sel).then((t) => t.replace(/\s+/g, ' ').trim());
 const unEcran = () => page.evaluate(() => ({
   v: document.documentElement.scrollHeight > innerHeight, h: document.documentElement.scrollWidth > innerWidth,
@@ -86,15 +86,18 @@ try {
   await page.screenshot({ path: join(CAPTURES, 'ajouter-2.png') });
   await page.click('#dlg-next');
   await page.waitForFunction(() => document.querySelector('#dlg-t')?.textContent === 'C’est ta vie jusqu’ici' && !document.getElementById('scrim').hidden);
-  verifier('le formulaire se conclut : le compte, les médailles, et quoi faire ensuite', (await texte('.bilan')).replace(/ /g, '') === '6trophées4enor2enbronze' && (await texte('#dlg-step')) === '6 trophées ajoutés' && (await texte('.dlg .aide')).includes('Reviens-y'), `${await texte('.bilan')} | ${await texte('#dlg-step')}`);
+  verifier('le formulaire se conclut : le compte, les médailles, et quoi faire ensuite', (await texte('.bilan')).replace(/ /g, '') === '6trophées4enor2enbronzeTouche-à-tout' && (await texte('#dlg-step')) === '6 trophées ajoutés' && (await texte('.dlg .aide')).includes('Reviens-y'), `${await texte('.bilan')} | ${await texte('#dlg-step')}`);
   await page.screenshot({ path: join(CAPTURES, 'bilan.png') });
   await page.click('#dlg-next');
   verifier('« Voir ma page » referme', await page.isHidden('.dlg'));
   verifier('six trophées ajoutés : le total et les catégories suivent', (await nombres()) === '6/1/1/1/1/1/1', await nombres());
   verifier('la légende compte les médailles : la rareté décide, sinon le choix', (await texte('.leg')).replace(/ /g, '') === '4enor2enbronze', await texte('.leg'));
   verifier('acheté à 29 ans : en or, grâce à l’année de naissance', (await page.$$('.cell:nth-child(4) .m.or')).length === 1);
-  verifier('le ruban montre les âges : adolescence, vingtaine, trentaine', (await page.$$eval('#ages span', (xs) => xs.map((x) => x.textContent).join('|'))) === 'l’adolescence|la vingtaine|la trentaine', await page.$$eval('#ages span', (xs) => xs.map((x) => x.textContent).join('|')));
-  verifier('une année impossible est ignorée, le ruban va de 2008 à aujourd’hui', (await page.$$('#ruban .an')).length === AN - 2008 + 1);
+  verifier('le ruban montre les âges : adolescence, vingtaine, trentaine', (await page.$$eval('#ages span', (xs) => xs.map((x) => x.textContent).join('|'))) === 'l’adolescence|la vingtaine', await page.$$eval('#ages span', (xs) => xs.map((x) => x.textContent).join('|')));
+  verifier('une année impossible est ignorée, et le ruban s’arrête au dernier trophée (2008 à 2021)', (await page.$$('#ruban .an')).length === 14, String((await page.$$('#ruban .an')).length));
+  verifier('chaque tuile nomme ses réussites', (await texte('.cell.axe >> nth=0')).includes('Un master') && (await texte('.cell.axe >> nth=2')).includes('Acheter mon logement') && (await texte('.cell.axe >> nth=4')).includes('La naissance de Lou'), await texte('#axes'));
+  verifier('un trophée dans chaque catégorie : le badge Touche-à-tout', (await texte('.cell >> nth=0')).includes('Touche-à-tout'));
+  verifier('sans rien d’épinglé, les plus rares tiennent lieu de hauts faits', (await texte('#hf-t')) === 'Tes plus rares' && (await page.$$('#feats li')).length === 3 && (await texte('#feats li >> nth=0')).includes('Vivre dans un autre pays'), await texte('.hf'));
 
   // ---------- Persistance ----------
   await ouvrirPage('essai-page');
@@ -115,6 +118,7 @@ try {
   await page.click('#dlg-next'); await annonce('2 trophées ajoutés');
   verifier('une réussite écrite à la main entre dans la catégorie de la tuile', (await nombres()) === '8/3/1/1/1/1/1', await nombres());
   verifier('un diplôme du supérieur est en argent', (await page.$$('.cell:nth-child(2) .m.argent')).length === 1);
+  verifier('trois trophées dans « Apprendre » : le badge « Tête bien faite »', (await texte('.cell.axe >> nth=0 >> .badge')) === 'Tête bien faite');
 
   // ---------- Faire le point ----------
   verifier('sans point, la page le dit', (await texte('#temps')) === 'Pas encore de point');
@@ -220,6 +224,7 @@ try {
   await page.click('.dlg .opt:has-text("Partir")'); await page.click('#dlg-next'); await page.waitForSelector('.annee');
   await page.click('#dlg-next');
   verifier('rangée, elle entre dans sa tuile', (await nombres()) === '8/1/2/2/3/+/+', await nombres());
+  verifier('trois trophées dans « Partir » : le badge « Globe-trotteuse »', (await texte('.cell.axe >> nth=3 >> .badge')) === 'Globe-trotteuse');
   await page.screenshot({ path: join(CAPTURES, 'ancienne-base.png') });
 
   // ---------- Une vie d'exemple : tailles, contrastes, captures ----------
@@ -249,7 +254,7 @@ try {
 
   // Contrastes : on rend le texte transparent, on relève le fond sous chaque texte, ciel le plus clair.
   await page.evaluate(() => document.documentElement.setAttribute('data-meteo', '5'));
-  const cibles = ['#today', 'h1', '.sv .k', '.sv .t', '.sv .q', '.cell .num', '.cell .n', '.leg span', '.lab', '.lien', '.ans span', '.temps', '#synth', '.hf strong', '.hf .petit', '#btn-point'];
+  const cibles = ['#today', 'h1', '.sv .k', '.sv .t', '.sv .q', '.cell .num', '.cell .n', '.cat-n', '.nb', '.nomme', '.reste', '.badge', '.ages span', '.leg span', '.lab', '.lien', '.ans span', '.temps', '#synth', '.hf strong', '.hf .petit', '#btn-point'];
   const zones = await page.evaluate((sels) => sels.flatMap((sel) => [...document.querySelectorAll(sel)].map((x) => { const r = document.createRange(); r.selectNodeContents(x); const b = r.getBoundingClientRect(); return { sel, x: b.left, y: b.top, w: b.width, h: b.height, c: getComputedStyle(x).color, gros: parseFloat(getComputedStyle(x).fontSize) >= 24 }; })).filter((z) => z.w > 2), cibles);
   const radarTextes = await page.$$eval('#radar text', (ts) => ts.map((t) => { const b = t.getBoundingClientRect(); return { sel: 'radar', x: b.left, y: b.top, w: b.width, h: b.height, c: getComputedStyle(t).fill, gros: false }; }));
   // Les coupes aussi doivent se détacher du fond : 3:1, comme tout dessin qui porte un sens.

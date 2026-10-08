@@ -1,0 +1,324 @@
+{
+  "resultats": [
+    {
+      "profil": "Débutante, 24 ans",
+      "trophees": 5,
+      "actuelle": {
+        "nomsLisibles": 1,
+        "motsDeReussites": 3,
+        "motsEnTout": 73,
+        "surfaceNoms": 1.8,
+        "surfaceChiffres": 1.5,
+        "surfaceIcones": 0.3,
+        "icones": 13,
+        "blocs": {
+          "souvenir": 21.2,
+          "tuiles": 12.5,
+          "ruban": 17.3,
+          "enCeMoment": 14.2,
+          "hautsFaits": 6.8
+        },
+        "deborde": false
+      },
+      "medailles": {
+        "total": 5,
+        "or": 0,
+        "argent": 2,
+        "bronze": 3
+      },
+      "proposee": {
+        "nomsLisibles": 5,
+        "motsDeReussites": 28,
+        "motsEnTout": 95,
+        "surfaceNoms": 3.5,
+        "surfaceChiffres": 0.2,
+        "surfaceIcones": 0.5,
+        "icones": 16,
+        "blocs": {
+          "souvenir": 21.2,
+          "tuiles": 12.3,
+          "ruban": 17.3,
+          "enCeMoment": 14.2,
+          "hautsFaits": 6.8
+        },
+        "deborde": false
+      }
+    },
+    {
+      "profil": "Vie posée, 41 ans",
+      "trophees": 10,
+      "actuelle": {
+        "nomsLisibles": 1,
+        "motsDeReussites": 2,
+        "motsEnTout": 73,
+        "surfaceNoms": 1.6,
+        "surfaceChiffres": 1.7,
+        "surfaceIcones": 0.6,
+        "icones": 22,
+        "blocs": {
+          "souvenir": 21.2,
+          "tuiles": 12.5,
+          "ruban": 17.3,
+          "enCeMoment": 14.2,
+          "hautsFaits": 6.8
+        },
+        "deborde": false
+      },
+      "medailles": {
+        "total": 10,
+        "or": 0,
+        "argent": 1,
+        "bronze": 9
+      },
+      "proposee": {
+        "nomsLisibles": 8,
+        "motsDeReussites": 32,
+        "motsEnTout": 104,
+        "surfaceNoms": 3.7,
+        "surfaceChiffres": 0.4,
+        "surfaceIcones": 0.7,
+        "icones": 23,
+        "blocs": {
+          "souvenir": 16.8,
+          "tuiles": 18.2,
+          "ruban": 15.7,
+          "enCeMoment": 14.9,
+          "hautsFaits": 6.2
+        },
+        "deborde": false
+      }
+    },
+    {
+      "profil": "Voyageuse diplômée, 34 ans",
+      "trophees": 15,
+      "actuelle": {
+        "nomsLisibles": 1,
+        "motsDeReussites": 2,
+        "motsEnTout": 73,
+        "surfaceNoms": 1.1,
+        "surfaceChiffres": 1.8,
+        "surfaceIcones": 0.8,
+        "icones": 31,
+        "blocs": {
+          "souvenir": 20.2,
+          "tuiles": 14.2,
+          "ruban": 16.5,
+          "enCeMoment": 14.6,
+          "hautsFaits": 6.5
+        },
+        "deborde": false
+      },
+      "medailles": {
+        "total": 15,
+        "or": 5,
+        "argent": 6,
+        "bronze": 4
+      },
+      "proposee": {
+        "nomsLisibles": 11,
+        "motsDeReussites": 42,
+        "motsEnTout": 141,
+        "surfaceNoms": 3.6,
+        "surfaceChiffres": 0.4,
+        "surfaceIcones": 0.9,
+        "icones": 32,
+        "blocs": {
+          "souvenir": 15,
+          "tuiles": 19.9,
+          "ruban": 15.7,
+          "enCeMoment": 14.9,
+          "hautsFaits": 6.2
+        },
+        "deborde": false
+      }
+    },
+    {
+      "profil": "Reconversion, 52 ans",
+      "trophees": 16,
+      "actuelle": {
+        "nomsLisibles": 1,
+        "motsDeReussites": 4,
+        "motsEnTout": 77,
+        "surfaceNoms": 2.7,
+        "surfaceChiffres": 1.8,
+        "surfaceIcones": 0.9,
+        "icones": 34,
+        "blocs": {
+          "souvenir": 20.2,
+          "tuiles": 14.2,
+          "ruban": 16.5,
+          "enCeMoment": 14.6,
+          "hautsFaits": 6.5
+        },
+        "deborde": false
+      },
+      "medailles": {
+        "total": 16,
+        "or": 3,
+        "argent": 8,
+        "bronze": 5
+      },
+      "proposee": {
+        "nomsLisibles": 11,
+        "motsDeReussites": 55,
+        "motsEnTout": 143,
+        "surfaceNoms": 5.8,
+        "surfaceChiffres": 0.4,
+        "surfaceIcones": 0.9,
+        "icones": 33,
+        "blocs": {
+          "souvenir": 15,
+          "tuiles": 19.9,
+          "ruban": 15.7,
+          "enCeMoment": 14.9,
+          "hautsFaits": 6.2
+        },
+        "deborde": false
+      }
+    },
+    {
+      "profil": "Longue vie, 63 ans",
+      "trophees": 23,
+      "actuelle": {
+        "nomsLisibles": 1,
+        "motsDeReussites": 3,
+        "motsEnTout": 81,
+        "surfaceNoms": 2.5,
+        "surfaceChiffres": 1.8,
+        "surfaceIcones": 1.1,
+        "icones": 45,
+        "blocs": {
+          "souvenir": 20.2,
+          "tuiles": 14.2,
+          "ruban": 16.5,
+          "enCeMoment": 14.6,
+          "hautsFaits": 6.5
+        },
+        "deborde": false
+      },
+      "medailles": {
+        "total": 23,
+        "or": 4,
+        "argent": 10,
+        "bronze": 9
+      },
+      "proposee": {
+        "nomsLisibles": 14,
+        "motsDeReussites": 61,
+        "motsEnTout": 169,
+        "surfaceNoms": 5.9,
+        "surfaceChiffres": 0.4,
+        "surfaceIcones": 1.1,
+        "icones": 41,
+        "blocs": {
+          "souvenir": 15,
+          "tuiles": 19.9,
+          "ruban": 15.7,
+          "enCeMoment": 14.9,
+          "hautsFaits": 6.2
+        },
+        "deborde": false
+      }
+    },
+    {
+      "profil": "Coup de blues, 38 ans",
+      "trophees": 6,
+      "actuelle": {
+        "nomsLisibles": 1,
+        "motsDeReussites": 2,
+        "motsEnTout": 73,
+        "surfaceNoms": 1.6,
+        "surfaceChiffres": 1.5,
+        "surfaceIcones": 0.4,
+        "icones": 14,
+        "blocs": {
+          "souvenir": 21.3,
+          "tuiles": 12.3,
+          "ruban": 17.4,
+          "enCeMoment": 14.2,
+          "hautsFaits": 6.9
+        },
+        "deborde": false
+      },
+      "medailles": {
+        "total": 6,
+        "or": 0,
+        "argent": 0,
+        "bronze": 6
+      },
+      "proposee": {
+        "nomsLisibles": 6,
+        "motsDeReussites": 27,
+        "motsEnTout": 96,
+        "surfaceNoms": 3.5,
+        "surfaceChiffres": 0.2,
+        "surfaceIcones": 0.5,
+        "icones": 17,
+        "blocs": {
+          "souvenir": 20.6,
+          "tuiles": 13.3,
+          "ruban": 16.9,
+          "enCeMoment": 14.4,
+          "hautsFaits": 6.7
+        },
+        "deborde": false
+      }
+    },
+    {
+      "profil": "Voyageuse, page soignée",
+      "trophees": 15,
+      "actuelle": {
+        "nomsLisibles": 3,
+        "motsDeReussites": 13,
+        "motsEnTout": 98,
+        "surfaceNoms": 2.9,
+        "surfaceChiffres": 1.8,
+        "surfaceIcones": 1,
+        "icones": 34,
+        "blocs": {
+          "souvenir": 20.2,
+          "tuiles": 14.2,
+          "ruban": 16.5,
+          "enCeMoment": 14.6,
+          "hautsFaits": 6.5
+        },
+        "deborde": false
+      },
+      "medailles": {
+        "total": 15,
+        "or": 5,
+        "argent": 6,
+        "bronze": 4
+      },
+      "proposee": {
+        "nomsLisibles": 13,
+        "motsDeReussites": 55,
+        "motsEnTout": 146,
+        "surfaceNoms": 5.3,
+        "surfaceChiffres": 0.4,
+        "surfaceIcones": 0.9,
+        "icones": 32,
+        "blocs": {
+          "souvenir": 15,
+          "tuiles": 19.9,
+          "ruban": 15.7,
+          "enCeMoment": 14.9,
+          "hautsFaits": 6.2
+        },
+        "deborde": false
+      }
+    }
+  ],
+  "ressemblances": {
+    "actuelle": {
+      "moyenne": 78,
+      "mini": 46,
+      "maxi": 96
+    },
+    "proposee": {
+      "moyenne": 72,
+      "mini": 41,
+      "maxi": 94
+    }
+  }
+}
