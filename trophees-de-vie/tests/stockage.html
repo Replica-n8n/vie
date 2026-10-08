@@ -7,9 +7,9 @@
 // Essai du stockage dans un vrai navigateur (IndexedDB n'existe pas dans Node).
 // Lancé par tools/essai-stockage.mjs, qui lit window.resultat.
 import { ouvrir, effacer, idUnique, BASE } from '../js/stockage.js';
-import { NIVEAUX } from '../js/config/vie.js';
-import { comptes } from '../js/coeur.js';
-import { MOMENTS } from './exemple.js';
+import { CATALOGUE } from '../js/config/vie.js';
+import { comptes, lire } from '../js/coeur.js';
+import { MOMENTS, NAISSANCE } from './exemple.js';
 
 const controles = [];
 const verifier = (nom, ok, detail = '') => controles.push({ nom, ok: Boolean(ok), detail: String(detail) });
@@ -25,11 +25,11 @@ try {
   const a = await ouvrir(A, { maintenant });
   verifier('un auteur est tiré au premier lancement', a.auteur && a.auteur.length >= 32, a.auteur);
 
-  const t = await a.ecrire('moments', { genre: 'passage', titre: 'Permis', niveau: 'effort', annee: 2010, date: null });
+  const t = await a.ecrire('moments', { reussite: 'permis', titre: 'Permis', niveau: 'bronze', annee: 2010, date: null });
   verifier('un moment reçoit un identifiant, deux dates et un auteur', t.id && t.creeLe && t.modifieLe && t.auteur === a.auteur, JSON.stringify(t));
   verifier('deux identifiants ne se ressemblent pas', idUnique() !== idUnique());
 
-  const modifie = await a.ecrire('moments', { ...t, niveau: 'cap' });
+  const modifie = await a.ecrire('moments', { ...t, niveau: 'argent' });
   verifier('modifier garde la date de création et avance celle de modification', modifie.creeLe === t.creeLe && modifie.modifieLe > t.modifieLe);
   verifier('modifier ne crée pas de doublon', (await a.tout('moments')).length === 1);
 
@@ -56,18 +56,18 @@ try {
   // Reprise sur un autre appareil
   const b = await ouvrir(B, { maintenant });
   const ecrits = await b.importer(sauvegarde);
-  verifier('la sauvegarde se reprend sur un appareil vide', ecrits > 0 && (await b.tout('moments'))[0].niveau === 'cap', ecrits);
+  verifier('la sauvegarde se reprend sur un appareil vide', ecrits > 0 && (await b.tout('moments'))[0].niveau === 'argent', ecrits);
   const reprise = await b.lire('photos', photo.id);
   verifier('la photo revient entière', reprise && (await reprise.donnees.text()) === 'image fictive' && reprise.donnees.type === 'image/jpeg');
   verifier('l’identité de l’appareil ne s’importe pas', b.auteur !== a.auteur && (await b.reglage('auteur')) === b.auteur);
   verifier('importer deux fois n’écrit rien de plus', (await b.importer(sauvegarde)) === 0);
 
   // Le plus récent gagne, dans les deux sens
-  await b.ecrire('moments', { ...(await b.tout('moments'))[0], niveau: 'montagne' });
+  await b.ecrire('moments', { ...(await b.tout('moments'))[0], niveau: 'or' });
   await b.importer(sauvegarde);
-  verifier('une sauvegarde ancienne n’écrase pas une modification plus récente', (await b.tout('moments'))[0].niveau === 'montagne');
+  verifier('une sauvegarde ancienne n’écrase pas une modification plus récente', (await b.tout('moments'))[0].niveau === 'or');
   await a.importer(JSON.parse(JSON.stringify(await b.exporter())));
-  verifier('une sauvegarde récente remplace l’ancienne version', (await a.tout('moments'))[0].niveau === 'montagne');
+  verifier('une sauvegarde récente remplace l’ancienne version', (await a.tout('moments'))[0].niveau === 'or');
 
   let refus = '';
   try { await b.importer({ format: 'autre' }); } catch (e) { refus = e.message; }
@@ -79,7 +79,7 @@ try {
   // Une vie entière passe par la base sans rien perdre
   const c = await ouvrir('essai-c', { maintenant });
   for (const m of MOMENTS) await c.ecrire('moments', m);
-  verifier('une vie entière se relit avec les mêmes comptes', JSON.stringify(comptes(await c.tout('moments'), NIVEAUX)) === '{"total":22,"effort":6,"cap":11,"montagne":5}');
+  verifier('une vie entière se relit avec les mêmes comptes', JSON.stringify(comptes(lire(await c.tout('moments'), CATALOGUE, NAISSANCE))) === '{"total":21,"or":5,"argent":8,"bronze":8}');
   verifier('les essais ne touchent pas à la vraie base', !(await indexedDB.databases()).some((x) => x.name === BASE));
   c.fermer(); await effacer('essai-c');
 

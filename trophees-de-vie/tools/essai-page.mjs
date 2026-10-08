@@ -1,6 +1,7 @@
-// Essai de bout en bout de la vraie page, dans Chromium : page vide, les trois volets,
-// la persistance, les corrections, la sauvegarde, puis une vie d'exemple pour les
-// tailles d'écran, les contrastes mesurés sur les pixels et les captures.
+// Essai de bout en bout de la vraie page, dans Chromium : page vide, les volets,
+// la persistance, les corrections, la sauvegarde, une base écrite par les versions
+// précédentes, puis une vie d'exemple pour les tailles d'écran, les contrastes mesurés
+// sur les pixels et les captures.
 // Tout se passe dans des bases « essai-… » : la vraie base n'est jamais ouverte.
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
@@ -21,6 +22,8 @@ const serveur = createServer(async (q, r) => {
 await new Promise((ok) => serveur.listen(0, '127.0.0.1', ok));
 const ORIGINE = `http://127.0.0.1:${serveur.address().port}`;
 await mkdir(CAPTURES, { recursive: true });
+const BASES = ['essai-page', 'essai-page-2', 'essai-exemple', 'essai-ancien'];
+const AN = new Date().getFullYear();
 
 let echecs = 0;
 const verifier = (nom, ok, detail = '') => { if (!ok) echecs += 1; console.log(`${ok ? 'ok   ' : 'ÉCHEC'} ${nom}${ok ? '' : ` → ${detail}`}`); };
@@ -28,6 +31,7 @@ const verifier = (nom, ok, detail = '') => { if (!ok) echecs += 1; console.log(`
 const navigateur = await chromium.launch();
 const contexte = await navigateur.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
 const page = await contexte.newPage();
+page.setDefaultTimeout(10000);
 const erreurs = [];
 const dehors = [];
 page.on('pageerror', (e) => erreurs.push(String(e)));
@@ -35,10 +39,12 @@ page.on('console', (m) => { if (m.type() === 'error') erreurs.push(m.text()); })
 page.on('request', (q) => { if (!q.url().startsWith(ORIGINE) && !q.url().startsWith('data:') && !q.url().startsWith('blob:')) dehors.push(q.url()); });
 
 const ouvrirPage = async (base) => { await page.goto(`${ORIGINE}/index.html?base=${base}`, { waitUntil: 'networkidle' }); await page.evaluate(() => document.fonts.ready); };
-const effacer = (noms) => page.evaluate((ns) => Promise.all(ns.map((n) => new Promise((ok) => { const q = indexedDB.deleteDatabase(n); q.onsuccess = q.onerror = q.onblocked = () => ok(); }))), noms);
+// Effacer une base depuis la page qui l'a ouverte attendrait pour toujours : on part d'une page qui n'ouvre rien.
+const effacer = async () => { await page.goto(`${ORIGINE}/icone.svg`); await page.evaluate((ns) => Promise.all(ns.map((n) => new Promise((ok) => { const q = indexedDB.deleteDatabase(n); q.onsuccess = q.onerror = q.onblocked = () => ok(); }))), BASES); };
 // Le volet se ferme avant que la page soit redessinée : on attend l'annonce, qui vient en dernier.
 const annonce = (texte) => page.waitForFunction((t) => document.querySelector('#toast.on')?.textContent.includes(t), texte);
 const nombres = () => page.$$eval('.cell .num', (xs) => xs.map((x) => x.textContent).join('/'));
+const texte = (sel) => page.textContent(sel).then((t) => t.replace(/\s+/g, ' ').trim());
 const unEcran = () => page.evaluate(() => ({
   v: document.documentElement.scrollHeight > innerHeight, h: document.documentElement.scrollWidth > innerWidth,
   coupes: [...document.querySelectorAll('.p,.cell')].filter((x) => x.scrollHeight > x.clientHeight + 1 || x.scrollWidth > x.clientWidth + 1).map((x) => x.className),
@@ -47,83 +53,81 @@ const unEcran = () => page.evaluate(() => ({
 
 try {
   // ---------- Page vide ----------
-  await page.goto(`${ORIGINE}/tests/stockage.html`);
-  await effacer(['essai-page', 'essai-page-2', 'essai-exemple']);
+  await effacer();
   await ouvrirPage('essai-page');
-  verifier('la page vide invite à commencer', (await page.textContent('#sv')).includes('Raconte ta vie en cinq minutes'));
-  verifier('la page vide invite sur chaque axe au lieu d’afficher zéro', (await nombres()) === '0/+/+/+/+/+', await nombres());
+  verifier('la page vide invite à commencer', (await texte('#sv')).includes('Tout ce que tu as déjà fait'));
+  verifier('la page vide invite sur chaque catégorie au lieu d’afficher zéro', (await nombres()) === '0/+/+/+/+/+/+', await nombres());
   let e = await unEcran();
   verifier('la page vide tient sur un écran', !e.v && !e.h && !e.coupes.length, JSON.stringify(e));
   await page.screenshot({ path: join(CAPTURES, 'vide.png') });
 
-  // ---------- Ajouter ----------
+  // ---------- Ajouter : deux écrans, tout se touche ----------
   await page.click('#sv .btn');
-  verifier('« Commencer » ouvre le formulaire', await page.isVisible('.dlg'));
-  verifier('onze passages proposés', (await page.$$('.dlg .puce')).length === 11);
-  await page.click('#pu-diplome'); await page.fill('#an-diplome', '2015');
-  await page.click('#pu-premier-chez-moi'); await page.click('#nv-premier-chez-moi-montagne');
-  await page.fill('#q-autre', 'Permis de conduire'); await page.fill('#a-autre', '2010'); await page.click('#n-autre-effort');
+  verifier('« Commencer » ouvre le formulaire, trois catégories par écran', await page.isVisible('.dlg') && (await page.$$('.dlg .groupe')).length === 3);
+  await page.fill('#naissance', '1992');
+  await page.click('#pu-master'); await page.fill('#an-master', '2015');
+  verifier('une réussite qui a un chiffre ne demande pas de médaille', !(await page.$('#nv-master-or')));
+  await page.click('#pu-proprietaire'); await page.fill('#an-proprietaire', '2021');
+  await page.click('#pu-premier-emploi'); await page.fill('#an-premier-emploi', '2015');
+  verifier('une réussite sans chiffre propose sa médaille, qu’on peut changer', (await page.getAttribute('#nv-premier-emploi-bronze', 'aria-pressed')) === 'true');
+  await page.click('#pu-trouver-voie'); await page.click('#pu-trouver-voie');
+  verifier('décocher une réussite la referme', !(await page.$('#an-trouver-voie')) && (await page.getAttribute('#pu-trouver-voie', 'aria-pressed')) === 'false');
   await page.screenshot({ path: join(CAPTURES, 'ajouter-1.png') });
   await page.click('#dlg-next');
-  verifier('trente propositions à toucher, six par axe', (await page.$$('.dlg .puce')).length === 30 && (await page.$$('.dlg .groupe')).length === 5);
-  await page.click('#pu-amis-longue-date'); await page.fill('#an-amis-longue-date', '2008'); await page.click('#nv-amis-longue-date-montagne');
-  await page.click('#pu-vivre-ailleurs'); await page.fill('#an-vivre-ailleurs', '3000');
-  await page.click('#pu-dire-merci'); await page.click('#pu-dire-merci');
-  verifier('décocher une proposition la referme', !(await page.$('#an-dire-merci')) && (await page.getAttribute('#pu-dire-merci', 'aria-pressed')) === 'false');
+  await page.click('#pu-vivre-etranger'); await page.fill('#an-vivre-etranger', '3000');
+  await page.click('#pu-marathon'); await page.fill('#an-marathon', '2008');
+  await page.click('#pu-enfant'); await page.click('#nv-enfant-or');
   await page.screenshot({ path: join(CAPTURES, 'ajouter-2.png') });
   await page.click('#dlg-next');
-  await page.fill('#q-s-beau', 'Le jour où j’ai eu les clés'); await page.fill('#a-s-beau', '2017');
-  await page.screenshot({ path: join(CAPTURES, 'ajouter-3.png') });
-  await page.click('#dlg-next');
-  await annonce('6 moments ajoutés');
-  verifier('six moments ajoutés : le total et les axes suivent', (await nombres()) === '6/1/+/+/1/+', await nombres());
-  verifier('le total dit les passages', (await page.textContent('.cell')).includes('dont 3 passages'), await page.textContent('.cell'));
-  verifier('la notification annonce le compte', (await page.textContent('#toast')).includes('6 moments ajoutés'), await page.textContent('#toast'));
-  verifier('une année impossible est ignorée, le moment va dans « Un jour »', (await page.$$('#ruban .an')).length === new Date().getFullYear() - 2008 + 1);
-  verifier('l’amitié est une montagne, en or', (await page.$$('.cell:nth-child(5) .m.montagne')).length === 1);
-  verifier('la légende compte les niveaux', (await page.textContent('.leg')).replace(/\s+/g, ' ').includes('3 montagnes') && (await page.textContent('.leg')).includes('1 effort'), await page.textContent('.leg'));
+  await annonce('6 trophées ajoutés');
+  verifier('six trophées ajoutés : le total et les catégories suivent', (await nombres()) === '6/1/1/1/1/1/1', await nombres());
+  verifier('la légende compte les médailles : la rareté décide, sinon le choix', (await texte('.leg')) === '5 en or1 en bronze' || (await texte('.leg')) === '5 en or 1 en bronze', await texte('.leg'));
+  verifier('acheté à 29 ans : en or, grâce à l’année de naissance', (await page.$$('.cell:nth-child(4) .m.or')).length === 1);
+  verifier('une année impossible est ignorée, le ruban va de 2008 à aujourd’hui', (await page.$$('#ruban .an')).length === AN - 2008 + 1);
 
   // ---------- Persistance ----------
   await ouvrirPage('essai-page');
-  verifier('après rechargement, tout est encore là', (await nombres()) === '6/1/+/+/1/+', await nombres());
+  verifier('après rechargement, tout est encore là', (await nombres()) === '6/1/1/1/1/1/1', await nombres());
   await page.click('#btn-add');
-  verifier('un passage déjà vécu ne se recoche pas', await page.isDisabled('#pu-diplome') && !(await page.isDisabled('#pu-mariage')));
+  verifier('l’année de naissance est gardée', (await page.inputValue('#naissance')) === '1992');
+  verifier('une réussite déjà faite ne se recoche pas', await page.isDisabled('#pu-master') && !(await page.isDisabled('#pu-doctorat')));
   await page.keyboard.press('Escape');
   verifier('Échap ferme le volet', await page.isHidden('.dlg'));
 
-  // ---------- Une tuile d'axe ouvre ses propositions ----------
-  await page.click('.cell.axe >> nth=1');
-  verifier('la tuile « Vivre hors du travail » ouvre ses six propositions', (await page.textContent('#dlg-t')) === 'Vivre hors du travail' && (await page.$$('.dlg .puce')).length === 6);
-  await page.click('#pu-hors-vacances');
-  await page.screenshot({ path: join(CAPTURES, 'axe.png') });
-  await page.click('#dlg-next'); await annonce('Moment ajouté');
-  verifier('toucher une proposition remplit la tuile', (await nombres()) === '7/1/1/+/1/+', await nombres());
-  await page.click('.cell.axe >> nth=3');
-  verifier('une proposition déjà faite reste cochée et ne se recoche pas', await page.isDisabled('#pu-amis-longue-date'));
-  await page.keyboard.press('Escape');
+  // ---------- Une tuile ouvre sa catégorie ----------
+  await page.click('.cell.axe >> nth=0');
+  verifier('la tuile « Apprendre » ouvre ses réussites', (await texte('#dlg-t')) === 'Apprendre' && (await page.$$('.dlg .puce')).length === 6);
+  await page.click('#pu-diplome'); await page.fill('#an-diplome', '2013');
+  await page.fill('#q-libre', 'Le bac'); await page.fill('#a-libre', '2010'); await page.click('#n-libre-bronze');
+  await page.screenshot({ path: join(CAPTURES, 'categorie.png') });
+  await page.click('#dlg-next'); await annonce('2 trophées ajoutés');
+  verifier('une réussite écrite à la main entre dans la catégorie de la tuile', (await nombres()) === '8/3/1/1/1/1/1', await nombres());
+  verifier('un diplôme du supérieur est en argent', (await page.$$('.cell:nth-child(2) .m.argent')).length === 1);
 
   // ---------- Faire le point ----------
-  verifier('sans point, la page le dit', (await page.textContent('#temps')) === 'Pas encore de point');
+  verifier('sans point, la page le dit', (await texte('#temps')) === 'Pas encore de point');
+  await page.waitForFunction(() => !document.querySelector('#toast.on'));
   await page.click('#btn-point');
   await page.$eval('#sl-sante', (c) => { c.value = 9; c.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.screenshot({ path: join(CAPTURES, 'point-1.png') });
   await page.click('#dlg-next'); await page.click('.opt:has-text("Grand soleil")');
-  await page.click('#dlg-next'); await page.click('.opt:has-text("Oui")'); await page.fill('#q-fierte', 'Mon balcon fleuri');
+  await page.click('#dlg-next'); await page.click('.opt:has-text("Oui")');
   await page.click('#dlg-next'); await annonce('C’est noté');
-  verifier('le point s’affiche : météo, carte, phrase', (await page.textContent('#temps')) === 'Grand soleil' && (await page.textContent('#radar')).includes('Santé 9') && (await page.textContent('#synth')) === 'Premier point posé.', `${await page.textContent('#temps')} | ${await page.textContent('#synth')}`);
+  verifier('le point s’affiche : météo, carte, phrase', (await texte('#temps')) === 'Grand soleil' && (await texte('#radar')).includes('Santé 9') && (await texte('#synth')) === 'Premier point posé.', `${await texte('#temps')} | ${await texte('#synth')}`);
   verifier('le ciel suit la météo', (await page.getAttribute('html', 'data-meteo')) === '5');
-  verifier('la fierté du mois rejoint la vie', (await nombres()) === '8/1/1/+/1/1', await nombres());
+  await page.waitForFunction(() => !document.querySelector('#toast.on'));
   await page.click('#btn-point');
   verifier('refaire le point repart du dernier', (await page.inputValue('#sl-sante')) === '9');
-  await page.click('#dlg-next'); await page.click('.opt:has-text("Orageux")'); await page.click('#dlg-next'); await page.waitForFunction(() => !document.querySelector('#toast.on')); await page.click('#dlg-next');
+  await page.click('#dlg-next'); await page.click('.opt:has-text("Orageux")'); await page.click('#dlg-next'); await page.click('#dlg-next');
   await annonce('C’est noté');
   const nbPoints = await page.evaluate(async () => { const { ouvrir } = await import('/js/stockage.js'); const b = await ouvrir('essai-page'); const n = (await b.tout('points')).length; b.fermer(); return n; });
-  verifier('deux points le même mois n’en font qu’un', nbPoints === 1 && (await page.textContent('#temps')) === 'Orageux' && (await page.getAttribute('html', 'data-meteo')) === '1', `${nbPoints} point(s)`);
+  verifier('deux points le même mois n’en font qu’un', nbPoints === 1 && (await texte('#temps')) === 'Orageux' && (await page.getAttribute('html', 'data-meteo')) === '1', `${nbPoints} point(s)`);
 
   // ---------- Tout voir ----------
   await page.click('#btn-parcours');
-  verifier('le parcours liste les huit moments', (await page.$$('.annee li')).length === 8);
-  verifier('le moment sans année est rangé dans « Un jour »', (await page.textContent('.annee:last-child')).includes('Un jour') && (await page.textContent('.annee:last-child')).includes('Partir vivre ailleurs'));
+  verifier('le parcours liste les huit trophées', (await page.$$('.annee li')).length === 8);
+  verifier('le trophée sans année est rangé dans « Un jour »', (await texte('.annee:last-child')).includes('Un jour') && (await texte('.annee:last-child')).includes('Vivre dans un autre pays'));
+  verifier('« Top N % » se lit sur l’or qui a un chiffre, et seulement là', (await texte('.annee li:has-text("Un master")')).includes('Top 16 %') && (await texte('.annee li:has-text("Acheter mon logement")')).includes('Top 17 %') && !(await texte('.annee li:has-text("Un diplôme du supérieur")')).includes('Top') && !(await texte('.annee li:has-text("Courir un marathon")')).includes('Top'));
   await page.screenshot({ path: join(CAPTURES, 'parcours.png') });
   // Chaque geste écrit dans la base puis redessine : on attend que l'écran ait suivi avant le geste suivant.
   for (let i = 0; i < 3; i += 1) {
@@ -133,13 +137,17 @@ try {
   await page.click('.annee li >> nth=3 >> .mini:has-text("Haut fait")');
   await annonce('Trois hauts faits au plus');
   verifier('trois hauts faits au plus', (await page.$$('#feats li')).length === 3 && (await page.$$('.mini[aria-pressed="true"]')).length === 3);
-  await page.click('.annee li:has-text("Permis de conduire") .mini:has-text("Modifier")');
-  await page.fill('#q-edit', 'Mon permis, enfin'); await page.click('#n-edit-montagne'); await page.fill('#q-note', 'À la troisième tentative.');
+  await page.click('.annee li:has-text("Le bac") .mini:has-text("Modifier")');
+  verifier('une réussite écrite à la main se corrige : médaille et catégorie', Boolean(await page.$('#n-edit-or')) && (await page.$$('.dlg .opts .opt')).length === 6);
+  await page.fill('#q-edit', 'Mon bac, mention bien'); await page.click('#n-edit-argent'); await page.click('.dlg .opt:has-text("Se dépasser")'); await page.fill('#q-note', 'Le jour des résultats.');
   await page.click('#dlg-next'); await page.waitForSelector('.annee');
-  verifier('une correction s’enregistre et se voit', (await page.textContent('.dlg-body')).includes('Mon permis, enfin') && (await page.textContent('.dlg-body')).includes('À la troisième tentative.') && (await page.$$('.annee li:has-text("Mon permis, enfin") .m.montagne')).length === 1);
-  await page.click('.annee li:has-text("Mon balcon fleuri") .mini:has-text("Retirer")');
-  await annonce('Moment retiré');
-  verifier('retirer enlève le moment partout', (await page.$$('.annee li')).length === 7 && (await nombres()).startsWith('7/'), await nombres());
+  verifier('la correction s’enregistre et se voit', (await texte('.dlg-body')).includes('Mon bac, mention bien') && (await texte('.dlg-body')).includes('Le jour des résultats.') && (await page.$$('.annee li:has-text("Mon bac, mention bien") .m.argent')).length === 1 && (await nombres()) === '8/2/1/1/1/1/2', await nombres());
+  await page.click('.annee li:has-text("Un master") .mini:has-text("Modifier")');
+  verifier('avec un chiffre, la médaille ne se choisit pas', !(await page.$('#n-edit-or')) && (await page.$$('.dlg .opts .opt')).length === 0);
+  await page.click('#dlg-next'); await page.waitForSelector('.annee');
+  await page.click('.annee li:has-text("Premier emploi") .mini:has-text("Retirer")');
+  await annonce('Trophée retiré');
+  verifier('retirer enlève le trophée partout', (await page.$$('.annee li')).length === 7 && (await nombres()).startsWith('7/'), await nombres());
   await page.click('#toast button');
   await page.waitForFunction(() => document.querySelectorAll('.annee li').length === 8);
   verifier('« Annuler » le remet', (await nombres()).startsWith('8/'), await nombres());
@@ -151,25 +159,55 @@ try {
   const fichier = join(CAPTURES, 'sauvegarde-essai.json');
   await telechargement.saveAs(fichier);
   const contenu = JSON.parse(await readFile(fichier, 'utf8'));
-  verifier('la sauvegarde contient la vie', contenu.format === 'trophees-de-vie' && contenu.magasins.moments.length === 8 && contenu.magasins.points.length === 1, telechargement.suggestedFilename());
+  verifier('la sauvegarde contient la vie et l’année de naissance', contenu.format === 'trophees-de-vie' && contenu.magasins.moments.length === 8 && contenu.magasins.points.length === 1 && contenu.magasins.reglages.some((x) => x.cle === 'naissance' && x.valeur === 1992), telechargement.suggestedFilename());
   await ouvrirPage('essai-page-2');
   await page.click('#btn-sauvegarde');
   await page.setInputFiles('#fichier', { name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('pas du json') });
   await page.waitForFunction(() => document.querySelector('.alerte')?.textContent);
-  verifier('un fichier illisible est refusé avec une phrase', (await page.textContent('.alerte')) === 'Ce fichier n’est pas lisible.', await page.textContent('.alerte'));
+  verifier('un fichier illisible est refusé avec une phrase', (await texte('.alerte')) === 'Ce fichier n’est pas lisible.', await texte('.alerte'));
   await page.setInputFiles('#fichier', fichier);
   await annonce('Sauvegarde reprise');
-  verifier('la sauvegarde se reprend ailleurs, à l’identique', (await nombres()) === '8/1/1/+/1/1' && (await page.textContent('#temps')) === 'Orageux' && (await page.$$('#feats li')).length === 3, await nombres());
+  verifier('la sauvegarde se reprend ailleurs, à l’identique', (await nombres()) === '8/2/1/1/1/1/2' && (await texte('#temps')) === 'Orageux' && (await page.$$('#feats li')).length === 3 && (await page.$$('.cell:nth-child(4) .m.or')).length === 1, await nombres());
 
-  // ---------- Une vie d'exemple : tailles, contrastes, captures ----------
+  // ---------- Une base écrite par les versions 1 et 2 ----------
+  await page.goto(`${ORIGINE}/icone.svg`);
   await page.evaluate(async () => {
     const { ouvrir } = await import('/js/stockage.js');
-    const { MOMENTS, POINTS } = await import('/tests/exemple.js');
+    const b = await ouvrir('essai-ancien');
+    const v1 = (passage, titre, annee) => b.ecrire('moments', { genre: 'passage', passage, scene: null, axe: null, titre, niveau: 'cap', annee, date: null, note: '', hautFait: false, rappel: true });
+    await v1('quitter-maison', 'Quitter la maison', 2008); await v1('diplome', 'Un diplôme', 2011); await v1('premier-argent', 'Mon premier argent gagné', 2011);
+    await v1('premier-emploi', 'Premier emploi', 2015); await v1('premier-chez-moi', 'Mon premier chez-moi', 2016); await v1('grand-voyage', 'Un grand voyage', 2018);
+    await b.ecrire('moments', { genre: 'axe', passage: null, scene: null, axe: 'hors', proposition: 'hors-vacances', titre: 'Prendre de vraies vacances', niveau: 'montagne', annee: 2022, date: null });
+    await b.ecrire('moments', { genre: 'axe', passage: null, scene: null, axe: 'vivre', proposition: 'vivre-ailleurs', titre: 'Partir vivre ailleurs', niveau: 'effort', annee: 2018, date: null });
+    b.fermer();
+  });
+  await ouvrirPage('essai-ancien');
+  verifier('ses six passages de la version 1 se rangent dans les catégories', (await nombres()) === '8/1/2/2/2/+/+', await nombres());
+  verifier('ce qui venait des anciens axes garde sa médaille ou prend celle de sa rareté', (await texte('.leg')).replace(/ /g, '') === '2enor6enargent', await texte('.leg'));
+  await page.click('#btn-add');
+  verifier('ses anciens passages restent cochés', await page.isDisabled('#pu-diplome') && await page.isDisabled('#pu-premier-emploi'));
+  await page.click('#dlg-next');
+  verifier('une ancienne proposition est reconnue sous son nouveau nom', await page.isDisabled('#pu-vivre-etranger'));
+  await page.keyboard.press('Escape');
+  await page.click('#btn-parcours');
+  await page.click('.annee li:has-text("Prendre de vraies vacances") .mini:has-text("Modifier")');
+  verifier('une ancienne réponse sans catégorie peut être rangée à la main', (await page.$$('.dlg .opts .opt')).length === 6);
+  await page.click('.dlg .opt:has-text("Partir")'); await page.click('#dlg-next'); await page.waitForSelector('.annee');
+  await page.click('#dlg-next');
+  verifier('rangée, elle entre dans sa tuile', (await nombres()) === '8/1/2/2/3/+/+', await nombres());
+  await page.screenshot({ path: join(CAPTURES, 'ancienne-base.png') });
+
+  // ---------- Une vie d'exemple : tailles, contrastes, captures ----------
+  await page.goto(`${ORIGINE}/icone.svg`);
+  await page.evaluate(async () => {
+    const { ouvrir } = await import('/js/stockage.js');
+    const { MOMENTS, POINTS, NAISSANCE } = await import('/tests/exemple.js');
     const b = await ouvrir('essai-exemple');
     const an = new Date(); const mois = (n) => { const t = an.getFullYear() * 12 + an.getMonth() - n; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`; };
     const jour = `${String(an.getMonth() + 1).padStart(2, '0')}-${String(an.getDate()).padStart(2, '0')}`;
     for (const m of MOMENTS) await b.ecrire('moments', m.id === 'semi' ? { ...m, date: `${an.getFullYear() - 2}-${jour}`, annee: an.getFullYear() - 2 } : m);
     for (const [i, p] of POINTS.entries()) await b.ecrire('points', { ...p, mois: mois([4, 3, 1, 0][i]) });
+    await b.regler('naissance', NAISSANCE);
     b.fermer();
   });
   for (const [w, h] of [[1280, 720], [1920, 1080], [1440, 900]]) {
@@ -178,15 +216,19 @@ try {
     e = await unEcran();
     verifier(`une vie remplie tient sur un écran en ${w} × ${h}, sans texte sous 14 px`, !e.v && !e.h && !e.coupes.length && !e.petits, JSON.stringify(e));
   }
-  verifier('le souvenir du jour est l’anniversaire', (await page.textContent('#sv')).includes('Il y a 2 ans aujourd’hui') && (await page.textContent('#sv')).includes('semi-marathon'), await page.textContent('#sv'));
-  verifier('la carte se compare au point d’il y a trois mois', (await page.textContent('#synth')).startsWith('Amour, Santé, Proches et Cadre de vie montent depuis'), await page.textContent('#synth'));
+  verifier('la vie d’exemple : 21 trophées dans six catégories', (await nombres()) === '21/4/4/3/2/2/5', await nombres());
+  verifier('le souvenir du jour est l’anniversaire', (await texte('#sv')).includes('Il y a 2 ans aujourd’hui') && (await texte('#sv')).includes('semi-marathon'), await texte('#sv'));
+  verifier('les hauts faits disent leur rareté', (await texte('#feats')).includes('Top 16 %') && (await texte('#feats')).includes('Top 4 %') && (await texte('#feats')).includes('Top 17 %'), await texte('#feats'));
+  verifier('la carte se compare au point d’il y a trois mois', (await texte('#synth')).startsWith('Amour, Santé, Proches et Cadre de vie montent depuis'), await texte('#synth'));
   await page.screenshot({ path: join(CAPTURES, 'page.png') });
 
   // Contrastes : on rend le texte transparent, on relève le fond sous chaque texte, ciel le plus clair.
   await page.evaluate(() => document.documentElement.setAttribute('data-meteo', '5'));
-  const cibles = ['#today', 'h1', '.sv .k', '.sv .t', '.sv .q', '.cell .num', '.cell .n', '.cell .petit', '.leg span', '.lab', '.lien', '.ans span', '.temps', '#synth', '.hf strong', '.hf .petit', '#btn-point'];
+  const cibles = ['#today', 'h1', '.sv .k', '.sv .t', '.sv .q', '.cell .num', '.cell .n', '.leg span', '.lab', '.lien', '.ans span', '.temps', '#synth', '.hf strong', '.hf .petit', '#btn-point'];
   const zones = await page.evaluate((sels) => sels.flatMap((sel) => [...document.querySelectorAll(sel)].map((x) => { const r = document.createRange(); r.selectNodeContents(x); const b = r.getBoundingClientRect(); return { sel, x: b.left, y: b.top, w: b.width, h: b.height, c: getComputedStyle(x).color, gros: parseFloat(getComputedStyle(x).fontSize) >= 24 }; })).filter((z) => z.w > 2), cibles);
   const radarTextes = await page.$$eval('#radar text', (ts) => ts.map((t) => { const b = t.getBoundingClientRect(); return { sel: 'radar', x: b.left, y: b.top, w: b.width, h: b.height, c: getComputedStyle(t).fill, gros: false }; }));
+  // Les coupes aussi doivent se détacher du fond : 3:1, comme tout dessin qui porte un sens.
+  const coupes = await page.$$eval('.page .m', (ms) => ms.map((m) => { const b = m.getBoundingClientRect(); return { sel: `coupe ${m.className.replace('m ', '')}`, x: b.left, y: b.top, w: b.width, h: b.height, c: getComputedStyle(m).backgroundColor, gros: true }; }));
   const style = await page.addStyleTag({ content: '*{color:transparent !important} svg text,svg tspan{fill:transparent !important} .m{visibility:hidden}' });
   const capture = (await page.screenshot()).toString('base64');
   await style.evaluate((n) => n.remove());
@@ -198,12 +240,12 @@ try {
     const lum = (r, g, b) => 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b);
     return zones.map((z) => {
       const [r, g, b] = z.c.match(/[\d.]+/g).map(Number); const lt = lum(r, g, b);
-      const d = cx.getImageData(Math.floor(z.x), Math.floor(z.y), Math.max(1, Math.floor(z.w)), Math.max(1, Math.floor(z.h))).data;
+      const d = cx.getImageData(Math.max(0, Math.floor(z.x)), Math.max(0, Math.floor(z.y)), Math.max(1, Math.floor(z.w)), Math.max(1, Math.floor(z.h))).data;
       let pire = 99;
       for (let i = 0; i < d.length; i += 4) { const lf = lum(d[i], d[i + 1], d[i + 2]); pire = Math.min(pire, (Math.max(lt, lf) + 0.05) / (Math.min(lt, lf) + 0.05)); }
       return { sel: z.sel, pire, seuil: z.gros ? 3 : 4.5 };
     });
-  }, { capture, zones: [...zones, ...radarTextes] });
+  }, { capture, zones: [...zones, ...radarTextes, ...coupes] });
   const bas = mesures.filter((x) => x.pire < x.seuil).map((x) => `${x.sel} ${x.pire.toFixed(2)}`);
   const plusBas = mesures.reduce((a, b) => (b.pire / b.seuil < a.pire / a.seuil ? b : a));
   verifier(`les contrastes tiennent sur les pixels, ciel le plus clair (le plus juste : ${plusBas.sel} à ${plusBas.pire.toFixed(2)})`, !bas.length, [...new Set(bas)].join(' ; '));
@@ -214,7 +256,7 @@ try {
 
   verifier('aucune requête ne sort de la page', !dehors.length, dehors.join(', '));
   verifier('aucune erreur de script', !erreurs.length, erreurs.join(' | '));
-  await effacer(['essai-page', 'essai-page-2', 'essai-exemple']);
+  await effacer();
 } catch (erreur) {
   verifier('l’essai va au bout', false, erreur.stack || erreur);
 } finally {

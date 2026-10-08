@@ -1,88 +1,96 @@
-// Ce que la page sait d'une vie : les niveaux, les passages, les scènes, les cinq axes.
-// C'est LE fichier à modifier pour reformuler une question ou ajouter un passage.
+// Ce que la page sait d'une vie : les médailles, les catégories, les réussites
+// proposées et leur rareté. C'est LE fichier à modifier pour ajouter une réussite
+// ou corriger un chiffre.
 //
-// Rien ici n'est une liste à compléter. Un passage non vécu n'apparaît nulle part
-// sur la page : il n'existe que comme proposition dans le formulaire.
+// Rien ici n'est une liste à compléter. Une réussite non cochée n'apparaît nulle
+// part sur la page : elle n'existe que comme proposition dans le formulaire.
 
-// À quel point c'était dur pour soi. Sur la page : un anneau, une demi-lune, une pleine lune.
+// La médaille vient de la rareté quand un chiffre existe : sinon on la choisit.
 export const NIVEAUX = [
-  { id: 'effort', nom: 'Un effort', mots: ['effort', 'efforts'] },
-  { id: 'cap', nom: 'Un cap', mots: ['cap', 'caps'] },
-  { id: 'montagne', nom: 'Une montagne', mots: ['montagne', 'montagnes'] },
+  { id: 'bronze', nom: 'Bronze' },
+  { id: 'argent', nom: 'Argent' },
+  { id: 'or', nom: 'Or' },
 ];
 
-// Les grandes étapes qu'une vie compte, d'après le « script de vie » de Berntsen
-// et Rubin (2004). Ce sont des passages, pas des durées ni des répétitions.
-// « Mon premier chez-moi » vient d'elle, pas de l'étude.
-export const PASSAGES = [
-  { id: 'quitter-maison', titre: 'Quitter la maison' },
-  { id: 'premier-argent', titre: 'Mon premier argent gagné' },
-  { id: 'diplome', titre: 'Un diplôme' },
-  { id: 'premier-emploi', titre: 'Premier emploi' },
-  { id: 'trouver-voie', titre: 'Trouver ma voie' },
-  { id: 'tomber-amoureuse', titre: 'Tomber amoureuse' },
-  { id: 'mariage', titre: 'Me marier' },
-  { id: 'enfant', titre: 'Avoir un enfant' },
-  { id: 'grand-voyage', titre: 'Un grand voyage' },
-  { id: 'grande-reussite', titre: 'Une grande réussite' },
-  { id: 'premier-chez-moi', titre: 'Mon premier chez-moi' },
+export const CATEGORIES = [
+  { id: 'apprendre', nom: 'Apprendre' },
+  { id: 'travailler', nom: 'Travailler' },
+  { id: 'installer', nom: 'S’installer' },
+  { id: 'partir', nom: 'Partir' },
+  { id: 'aimer', nom: 'Aimer' },
+  { id: 'depasser', nom: 'Se dépasser' },
 ];
 
-// Trois scènes qui portent un récit de vie (entretien de McAdams).
-// `discret` : ne ressort pas en souvenir du jour tant qu'on ne l'a pas demandé.
-export const SCENES = [
-  { id: 'beau', question: 'Ton plus beau moment ?' },
-  { id: 'tournant', question: 'Un tournant dans ta vie ?' },
-  { id: 'dur', question: 'Le plus dur que tu as traversé ?', facultatif: true, discret: true },
-];
-
-// Les cinq regrets recueillis par Bronnie Ware auprès de personnes en fin de vie,
-// retournés en ce qu'on a déjà fait. C'est un témoignage, pas une étude.
+// `rarete` : la part des adultes qui l'ont fait, entre 0 et 1. La page n'affiche
+// que « Top N % », et seulement pour l'or : la source reste ici, pas à l'écran.
+// `parAge` : la même part selon l'âge au moment de la réussite (il faut l'année de
+// naissance) ; la dernière tranche sert quand l'âge est inconnu.
+// `defaut` : la médaille proposée quand aucun chiffre fiable n'existe.
 //
-// `propositions` : des choses concrètes à toucher, sans rien écrire. Elles sont de
-// nous, pas d'une étude : elles déclinent chaque regret en gestes reconnaissables.
-// Sans elles, seules des questions ouvertes et intimes remplissaient les axes, et
-// la page restait aux cinq sixièmes vide (constaté sur sa vraie page, 2026-10-08).
-// Un identifiant de proposition ne se renomme jamais : les moments gardés le portent.
-export const AXES = [
-  { id: 'vivre', nom: 'Vivre ma vie à moi', question: 'Un autre choix fait pour toi ?', propositions: [
-    { id: 'vivre-changer-voie', titre: 'Changer de voie' },
-    { id: 'vivre-ailleurs', titre: 'Partir vivre ailleurs' },
-    { id: 'vivre-seule', titre: 'Vivre seule' },
-    { id: 'vivre-dire-non', titre: 'Dire non à ce qu’on attendait de moi' },
-    { id: 'vivre-mon-compte', titre: 'Me lancer à mon compte' },
-    { id: 'vivre-etudes', titre: 'Reprendre des études' },
-  ] },
-  { id: 'hors', nom: 'Vivre hors du travail', question: 'Un autre moment où ta vie est passée avant le travail ?', propositions: [
-    { id: 'hors-vacances', titre: 'Prendre de vraies vacances' },
-    { id: 'hors-passion', titre: 'Tenir un sport ou une passion' },
-    { id: 'hors-refuser', titre: 'Refuser des heures en plus' },
-    { id: 'hors-conge', titre: 'Prendre un congé pour moi' },
-    { id: 'hors-apprendre', titre: 'Apprendre quelque chose pour le plaisir' },
-    { id: 'hors-les-miens', titre: 'Choisir les miens plutôt que le travail' },
-  ] },
-  { id: 'dire', nom: 'Dire ce que je ressens', question: 'Autre chose que tu as osé dire ?', propositions: [
-    { id: 'dire-je-taime', titre: 'Dire je t’aime' },
-    { id: 'dire-aide', titre: 'Demander de l’aide' },
-    { id: 'dire-excuses', titre: 'M’excuser' },
-    { id: 'dire-limite', titre: 'Poser une limite' },
-    { id: 'dire-ca-ne-va-pas', titre: 'Dire ce qui n’allait pas' },
-    { id: 'dire-merci', titre: 'Remercier quelqu’un qui a compté' },
-  ] },
-  { id: 'amis', nom: 'Garder mes amis', question: 'Une autre amitié que tu as su garder ?', propositions: [
-    { id: 'amis-longue-date', titre: 'Garder une amitié de longue date' },
-    { id: 'amis-retrouver', titre: 'Retrouver un ami perdu de vue' },
-    { id: 'amis-etre-la', titre: 'Être là pour un ami dans un moment dur' },
-    { id: 'amis-premier-pas', titre: 'Faire le premier pas' },
-    { id: 'amis-distance', titre: 'Traverser la distance pour voir un ami' },
-    { id: 'amis-temoin', titre: 'Être témoin, marraine ou parrain' },
-  ] },
-  { id: 'bonheur', nom: 'M’autoriser le bonheur', question: 'Autre chose que tu t’es autorisée ?', propositions: [
-    { id: 'bonheur-cadeau', titre: 'M’offrir quelque chose dont je rêvais' },
-    { id: 'bonheur-feter', titre: 'Fêter une réussite' },
-    { id: 'bonheur-voyage', titre: 'Voyager rien que pour le plaisir' },
-    { id: 'bonheur-temps', titre: 'Prendre du temps pour moi sans culpabiliser' },
-    { id: 'bonheur-reve', titre: 'Réaliser un rêve d’enfant' },
-    { id: 'bonheur-oser', titre: 'Oser quelque chose de fou' },
-  ] },
+// ⚠️ Les chiffres ne viennent pas tous de la même population (OCDE, Union
+// européenne, France, monde) : elle a demandé l'OCDE, et on a pris le meilleur
+// chiffre disponible quand l'OCDE ne publie rien. Chaque source est notée.
+// ⚠️ Un identifiant ne se renomme jamais : les moments gardés le portent.
+export const REUSSITES = [
+  // OCDE, Regards sur l'éducation 2025 : 41,2 % des 25-64 ans ont un diplôme du supérieur.
+  { id: 'diplome', titre: 'Un diplôme du supérieur', categorie: 'apprendre', rarete: 0.41 },
+  // OCDE, Regards sur l'éducation 2025 (notes par pays) : 16 % des 25-34 ans ont un master.
+  { id: 'master', titre: 'Un master', categorie: 'apprendre', rarete: 0.16 },
+  // OCDE, Education GPS : 1,2 % des 25-64 ans ont un doctorat (2024).
+  { id: 'doctorat', titre: 'Un doctorat', categorie: 'apprendre', rarete: 0.012 },
+  // Eurobaromètre spécial 540 (2024), Union européenne : 28 % tiennent une
+  // conversation dans deux langues étrangères, 11 % dans trois.
+  { id: 'langues-2', titre: 'Parler deux langues étrangères', categorie: 'apprendre', rarete: 0.28 },
+  { id: 'langues-3', titre: 'Parler trois langues étrangères', categorie: 'apprendre', rarete: 0.11 },
+  { id: 'reprendre-etudes', titre: 'Reprendre des études', categorie: 'apprendre', defaut: 'argent' },
+
+  { id: 'premier-argent', titre: 'Mon premier argent gagné', categorie: 'travailler', defaut: 'bronze' },
+  { id: 'premier-emploi', titre: 'Premier emploi', categorie: 'travailler', defaut: 'bronze' },
+  { id: 'trouver-voie', titre: 'Trouver ma voie', categorie: 'travailler', defaut: 'argent' },
+  { id: 'changer-metier', titre: 'Changer de métier', categorie: 'travailler', defaut: 'argent' },
+  // OCDE, « The job quality of self-employment in Europe » (2025) : 13 % des
+  // personnes en emploi sont à leur compte, en Europe, en 2021.
+  { id: 'a-mon-compte', titre: 'Me mettre à mon compte', categorie: 'travailler', rarete: 0.13 },
+  { id: 'grande-reussite', titre: 'Une grande réussite', categorie: 'travailler', defaut: 'argent' },
+
+  { id: 'quitter-maison', titre: 'Quitter la maison', categorie: 'installer', defaut: 'bronze' },
+  // Insee, enquête Transports et déplacements, citée par l'INJEP : 76 % des femmes
+  // et 91 % des hommes adultes ont le permis en France. Courant, donc bronze.
+  { id: 'permis', titre: 'Permis de conduire', categorie: 'installer', defaut: 'bronze' },
+  { id: 'premier-chez-moi', titre: 'Mon premier chez-moi', categorie: 'installer', defaut: 'bronze' },
+  // Insee, début 2024, France : 17,2 % des ménages de moins de 30 ans possèdent leur
+  // résidence principale, 47,7 % des 30-39 ans, 57,2 % de l'ensemble des ménages.
+  { id: 'proprietaire', titre: 'Acheter mon logement', categorie: 'installer', parAge: [{ avant: 30, part: 0.17 }, { avant: 40, part: 0.48 }, { part: 0.57 }] },
+  { id: 'epargne', titre: 'Mettre de l’argent de côté', categorie: 'installer', defaut: 'bronze' },
+
+  { id: 'grand-voyage', titre: 'Un grand voyage', categorie: 'partir', defaut: 'argent' },
+  { id: 'voyager-seule', titre: 'Voyager seule', categorie: 'partir', defaut: 'argent' },
+  // ONU, 2024 : 3,7 % de la population mondiale vit hors de son pays de naissance.
+  { id: 'vivre-etranger', titre: 'Vivre dans un autre pays', categorie: 'partir', rarete: 0.037 },
+  { id: 'etudier-etranger', titre: 'Étudier à l’étranger', categorie: 'partir', defaut: 'argent' },
+
+  { id: 'tomber-amoureuse', titre: 'Tomber amoureuse', categorie: 'aimer', defaut: 'bronze' },
+  { id: 'mariage', titre: 'Me marier', categorie: 'aimer', defaut: 'bronze' },
+  { id: 'enfant', titre: 'Avoir un enfant', categorie: 'aimer', defaut: 'bronze' },
+  { id: 'amis-longue-date', titre: 'Garder une amitié de longue date', categorie: 'aimer', defaut: 'argent' },
+  { id: 'amis-etre-la', titre: 'Être là pour un proche dans un moment dur', categorie: 'aimer', defaut: 'argent' },
+
+  { id: 'nager', titre: 'Apprendre à nager', categorie: 'depasser', defaut: 'bronze' },
+  { id: 'dix-km', titre: 'Courir 10 km', categorie: 'depasser', defaut: 'bronze' },
+  // Aucune statistique officielle : des estimations de blogs seulement. Pas de chiffre affiché.
+  { id: 'marathon', titre: 'Courir un marathon', categorie: 'depasser', defaut: 'or' },
+  { id: 'arreter-fumer', titre: 'Arrêter de fumer', categorie: 'depasser', defaut: 'argent' },
+  { id: 'creer', titre: 'Montrer ce que je crée', categorie: 'depasser', defaut: 'argent' },
+  { id: 'rebondir', titre: 'Me relever d’un coup dur', categorie: 'depasser', defaut: 'argent' },
 ];
+
+// Les propositions de la version 2 qui disaient la même chose sous un autre nom.
+// Un moment gardé avec l'ancien identifiant est lu comme la réussite d'aujourd'hui.
+export const ALIAS = {
+  'vivre-ailleurs': 'vivre-etranger',
+  'vivre-changer-voie': 'changer-metier',
+  'vivre-mon-compte': 'a-mon-compte',
+  'vivre-etudes': 'reprendre-etudes',
+};
+
+export const CATALOGUE = { reussites: REUSSITES, alias: ALIAS };

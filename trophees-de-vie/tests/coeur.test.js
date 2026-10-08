@@ -1,141 +1,216 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { NIVEAUX, PASSAGES, SCENES, AXES } from '../js/config/vie.js';
+import { NIVEAUX, CATEGORIES, REUSSITES, ALIAS, CATALOGUE } from '../js/config/vie.js';
 import { DOMAINES, METEOS, ELANS } from '../js/config/domaines.js';
-import { MOMENTS, POINTS } from './exemple.js';
+import { MOMENTS, POINTS, NAISSANCE } from './exemple.js';
 import {
-  comptes, parAxe, hautsFaits, ruban, souvenirDuJour,
+  SEUILS, definition, rarete, medaille, top, lire, dejaFaites, comptes, parCategorie, hautsFaits, ruban, souvenirDuJour,
   decalerMois, dernierPoint, pointDavant, ecartsRoue, phraseRoue,
 } from '../js/coeur.js';
 
 const AUJOURDHUI = '2026-10-05';
 const MOIS = '2026-10';
+const VUS = lire(MOMENTS, CATALOGUE, NAISSANCE);
+const vu = (id, liste = VUS) => liste.find((t) => t.id === id);
 
 // ---------- La configuration tient debout ----------
 
-test('la configuration : trois niveaux, cinq axes, trois scènes, des passages sans doublon', () => {
-  assert.deepEqual(NIVEAUX.map((n) => n.id), ['effort', 'cap', 'montagne']);
-  assert.equal(AXES.length, 5);
-  assert.equal(SCENES.length, 3);
-  assert.ok(PASSAGES.length >= 8 && PASSAGES.length <= 15, `${PASSAGES.length} passages`);
-  for (const groupe of [PASSAGES, SCENES, AXES, NIVEAUX, DOMAINES]) {
+test('la configuration : trois médailles, six catégories, des réussites sans doublon', () => {
+  assert.deepEqual(NIVEAUX.map((n) => n.id), ['bronze', 'argent', 'or']);
+  assert.equal(CATEGORIES.length, 6);
+  for (const groupe of [REUSSITES, CATEGORIES, NIVEAUX, DOMAINES]) {
     const ids = groupe.map((x) => x.id);
     assert.equal(new Set(ids).size, ids.length, `identifiant en double dans ${ids}`);
   }
-  const propositions = AXES.flatMap((a) => a.propositions);
-  for (const a of AXES) assert.ok(a.propositions.length >= 5 && a.propositions.length <= 7, `${a.id} : ${a.propositions.length} propositions`);
-  const idsATouchers = [...PASSAGES, ...propositions].map((x) => x.id);
-  assert.equal(new Set(idsATouchers).size, idsATouchers.length, 'un passage et une proposition partagent un identifiant');
+  const categories = CATEGORIES.map((c) => c.id);
+  for (const r of REUSSITES) assert.ok(categories.includes(r.categorie), `catégorie inconnue pour ${r.id}`);
+  for (const c of CATEGORIES) {
+    const n = REUSSITES.filter((r) => r.categorie === c.id).length;
+    assert.ok(n >= 4 && n <= 7, `${c.id} : ${n} réussites`);
+  }
   assert.equal(DOMAINES.length, 8);
   assert.equal(METEOS.length, 5);
   assert.equal(ELANS.length, 3);
 });
 
+test('chaque réussite a soit un chiffre, soit une médaille proposée, jamais les deux ni aucun', () => {
+  const medailles = NIVEAUX.map((n) => n.id);
+  for (const r of REUSSITES) {
+    const chiffre = r.rarete != null || Boolean(r.parAge);
+    assert.notEqual(chiffre, r.defaut != null, r.id);
+    if (r.defaut) assert.ok(medailles.includes(r.defaut), r.id);
+    for (const part of [r.rarete, ...(r.parAge ?? []).map((t) => t.part)].filter((p) => p != null)) {
+      assert.ok(part > 0 && part < 1, `${r.id} : ${part} n’est pas une part`);
+    }
+    if (r.parAge) assert.equal(r.parAge.at(-1).avant, undefined, `${r.id} : la dernière tranche sert à l’âge inconnu`);
+  }
+});
+
+test('les anciens identifiants pointent vers des réussites qui existent', () => {
+  const ids = REUSSITES.map((r) => r.id);
+  for (const [ancien, nouveau] of Object.entries(ALIAS)) {
+    assert.ok(ids.includes(nouveau), `${ancien} → ${nouveau}`);
+    assert.ok(!ids.includes(ancien), `${ancien} est à la fois un alias et une réussite`);
+  }
+});
+
 test('la configuration : aucun tiret long, aucun mot médical', () => {
-  const textes = [...NIVEAUX, ...PASSAGES, ...SCENES, ...AXES, ...AXES.flatMap((a) => a.propositions), ...DOMAINES]
-    .flatMap((x) => [x.titre, x.nom, x.question].filter(Boolean)).concat(METEOS, ELANS);
+  const textes = [...NIVEAUX, ...CATEGORIES, ...REUSSITES, ...DOMAINES].flatMap((x) => [x.titre, x.nom].filter(Boolean)).concat(METEOS, ELANS);
   for (const texte of textes) {
     assert.ok(!/[–—]/.test(texte), `tiret dans « ${texte} »`);
     assert.ok(!/dépress|anxi|troubl|diagnos|patholog|symptôm|thérap/i.test(texte), `mot médical dans « ${texte} »`);
   }
 });
 
-test('l’exemple des essais pointe vers des passages, des scènes et des axes qui existent', () => {
-  const connus = { passage: PASSAGES, scene: SCENES, axe: AXES };
-  const niveaux = NIVEAUX.map((n) => n.id);
-  for (const m of MOMENTS) {
-    assert.ok(niveaux.includes(m.niveau), m.id);
-    const cle = m[m.genre];
-    assert.ok(cle === null ? m.genre === 'passage' : connus[m.genre].some((x) => x.id === cle), `${m.id} → ${cle}`);
-  }
-  const domaines = DOMAINES.map((d) => d.id).sort();
-  for (const p of POINTS) assert.deepEqual(Object.keys(p.roue).sort(), domaines, p.mois);
+// ---------- Rareté et médaille ----------
+
+test('la rareté fixe la médaille : or jusqu’à un sur cinq, argent jusqu’à un sur deux', () => {
+  assert.deepEqual(SEUILS, { or: 0.2, argent: 0.5 });
+  assert.equal(medaille(0.2, {}, null), 'or');
+  assert.equal(medaille(0.21, {}, null), 'argent');
+  assert.equal(medaille(0.5, {}, null), 'argent');
+  assert.equal(medaille(0.51, {}, null), 'bronze');
+});
+
+test('avec un chiffre, la médaille choisie à la main ne compte pas', () => {
+  // la licence est notée « argent » dans l'exemple, le master aussi : seul le chiffre décide
+  assert.equal(vu('licence').niveau, 'argent');
+  assert.equal(vu('master').niveau, 'or');
+  assert.equal(lire([{ id: 'x', reussite: 'master', titre: 'Master', niveau: 'bronze', annee: 2015 }], CATALOGUE)[0].niveau, 'or');
+});
+
+test('sans chiffre : la médaille choisie, sinon celle proposée', () => {
+  assert.equal(vu('semi').niveau, 'or');
+  assert.equal(vu('bac').niveau, 'bronze');
+  const sansChoix = lire([{ id: 'x', reussite: 'marathon', titre: 'Marathon', annee: 2020 }, { id: 'y', reussite: null, titre: 'Libre', annee: 2020 }], CATALOGUE);
+  assert.equal(sansChoix[0].niveau, 'or');
+  assert.equal(sansChoix[1].niveau, 'argent');
+});
+
+test('« Top N % » n’est donné qu’à l’or qui a un chiffre', () => {
+  assert.equal(vu('master').top, 'Top 16 %');
+  assert.equal(vu('montreal').top, 'Top 4 %');
+  assert.equal(vu('licence').top, null, 'argent : pas de chiffre affiché');
+  assert.equal(vu('semi').top, null, 'or choisi à la main : pas de chiffre inventé');
+  assert.equal(top(0.012), 'Top 1 %');
+  assert.equal(top(0.001), 'Top 1 %', 'jamais « Top 0 % »');
+});
+
+test('acheter son logement : la médaille dépend de l’âge au moment de l’achat', () => {
+  const achat = (annee) => lire([{ id: 'a', reussite: 'proprietaire', titre: 'Achat', annee }], CATALOGUE, NAISSANCE)[0];
+  assert.equal(achat(2021).niveau, 'or'); // 29 ans
+  assert.equal(achat(2021).top, 'Top 17 %');
+  assert.equal(achat(2022).niveau, 'argent'); // 30 ans
+  assert.equal(achat(2031).niveau, 'argent'); // 39 ans
+  assert.equal(achat(2032).niveau, 'bronze'); // 40 ans
+  assert.equal(vu('achat').niveau, 'or');
+});
+
+test('sans année de naissance ou sans année d’achat, on prend le chiffre tous âges', () => {
+  const def = REUSSITES.find((x) => x.id === 'proprietaire');
+  assert.equal(rarete({ annee: 2021 }, def, null), 0.57);
+  assert.equal(rarete({ annee: null }, def, NAISSANCE), 0.57);
+  assert.equal(lire(MOMENTS, CATALOGUE, null).find((t) => t.id === 'achat').niveau, 'bronze');
+});
+
+test('les moments des versions 1 et 2 restent lisibles', () => {
+  assert.equal(vu('confinement').niveau, 'argent', '« cap » se lit argent');
+  const anciens = lire([{ id: 'm', titre: 'x', niveau: 'montagne', annee: 2020 }, { id: 'e', titre: 'y', niveau: 'effort', annee: 2020 }], CATALOGUE);
+  assert.deepEqual(anciens.map((t) => t.niveau), ['or', 'bronze'], '« montagne » se lit or, « effort » bronze');
+  assert.equal(vu('confinement').categorie, null);
+  // un moment gardé sous un ancien identifiant est lu comme la réussite d'aujourd'hui
+  assert.equal(definition(MOMENTS.find((m) => m.id === 'compte'), CATALOGUE).id, 'a-mon-compte');
+  assert.equal(vu('compte').niveau, 'or');
+  assert.equal(vu('compte').top, 'Top 13 %');
+  assert.equal(vu('compte').categorie, 'travailler');
+  const v1 = lire([{ id: 'p', genre: 'passage', passage: 'diplome', titre: 'Un diplôme', niveau: 'cap', annee: 2011 }], CATALOGUE)[0];
+  assert.equal(v1.categorie, 'apprendre');
+  assert.equal(v1.niveau, 'argent');
+});
+
+test('une réussite déjà faite se reconnaît, même sous son ancien identifiant', () => {
+  const faites = dejaFaites(MOMENTS, CATALOGUE);
+  assert.ok(faites.has('master') && faites.has('a-mon-compte') && !faites.has('doctorat'));
+  const retire = MOMENTS.map((m) => (m.id === 'master' ? { ...m, supprimeLe: 'x' } : m));
+  assert.ok(!dejaFaites(retire, CATALOGUE).has('master'), 'retirée, elle peut se recocher');
 });
 
 // ---------- En chiffres ----------
 
-test('les comptes de l’exemple : 22 moments, 5 montagnes, 11 caps, 6 efforts', () => {
-  assert.deepEqual(comptes(MOMENTS, NIVEAUX), { total: 22, effort: 6, cap: 11, montagne: 5 });
+test('les comptes de l’exemple : 21 trophées, 5 en or, 8 en argent, 8 en bronze', () => {
+  assert.deepEqual(comptes(VUS), { total: 21, or: 5, argent: 8, bronze: 8 });
 });
 
 test('un moment retiré ne compte plus, nulle part', () => {
-  const sans = MOMENTS.map((m) => (m.id === 'master' ? { ...m, supprimeLe: '2026-10-01T00:00:00Z' } : m));
-  assert.equal(comptes(sans, NIVEAUX).total, 21);
-  assert.equal(comptes(sans, NIVEAUX).montagne, 4);
-  assert.deepEqual(hautsFaits(sans).map((m) => m.id), ['montreal', 'partir']);
-  assert.ok(ruban(sans, 2026).annees.every((a) => a.moments.every((m) => m.id !== 'master')));
-  for (let i = 0; i < 40; i += 1) assert.notEqual(souvenirDuJour(sans, '2026-01-01', i / 40).moment.id, 'master');
+  const sans = lire(MOMENTS.map((m) => (m.id === 'master' ? { ...m, supprimeLe: '2026-10-01T00:00:00Z' } : m)), CATALOGUE, NAISSANCE);
+  assert.equal(comptes(sans).total, 20);
+  assert.equal(comptes(sans).or, 4);
+  assert.deepEqual(hautsFaits(sans).map((t) => t.id), ['montreal', 'achat']);
+  assert.ok(ruban(sans, 2026).annees.every((a) => a.trophees.every((t) => t.id !== 'master')));
 });
 
-test('les cinq axes de l’exemple : 3, 4, 2, 2, 2, dans l’ordre du temps', () => {
-  const axes = parAxe(MOMENTS, AXES);
-  assert.deepEqual(axes.map((a) => [a.id, a.moments.length]), [['vivre', 3], ['hors', 4], ['dire', 2], ['amis', 2], ['bonheur', 2]]);
-  assert.deepEqual(axes[1].moments.map((m) => m.id), ['nager', 'dix-km', 'semi', 'potager']);
+test('les six catégories de l’exemple, dans l’ordre du temps', () => {
+  const cats = parCategorie(VUS, CATEGORIES);
+  assert.deepEqual(cats.map((c) => [c.id, c.trophees.length]), [['apprendre', 4], ['travailler', 4], ['installer', 3], ['partir', 2], ['aimer', 2], ['depasser', 5]]);
+  assert.deepEqual(cats[5].trophees.map((t) => t.id), ['nager', 'dix-km', 'photos', 'semi', 'potager']);
 });
 
-test('un passage ou une scène n’entre dans aucun axe', () => {
-  const total = parAxe(MOMENTS, AXES).reduce((s, a) => s + a.moments.length, 0);
-  assert.equal(total, MOMENTS.filter((m) => m.genre === 'axe').length);
-  assert.equal(total, 13);
+test('une catégorie choisie à la main passe avant celle de la réussite', () => {
+  const deplace = lire([{ id: 'x', reussite: 'master', categorie: 'travailler', titre: 'Master', annee: 2015 }], CATALOGUE)[0];
+  assert.equal(deplace.categorie, 'travailler');
 });
 
 test('les hauts faits : trois au plus, les plus anciens d’abord', () => {
-  assert.deepEqual(hautsFaits(MOMENTS).map((m) => m.id), ['master', 'montreal', 'partir']);
-  assert.equal(hautsFaits(MOMENTS.map((m) => ({ ...m, hautFait: true }))).length, 3);
+  assert.deepEqual(hautsFaits(VUS).map((t) => t.id), ['master', 'montreal', 'achat']);
+  assert.equal(hautsFaits(VUS.map((t) => ({ ...t, hautFait: true }))).length, 3);
 });
 
 // ---------- Ruban ----------
 
 test('le ruban de l’exemple : de 2009 à 2026, années vides gardées', () => {
-  const { debut, annees, sansDate } = ruban(MOMENTS, 2026);
+  const { debut, annees, sansDate } = ruban(VUS, 2026);
   assert.equal(debut, 2009);
   assert.equal(annees.length, 18);
   assert.equal(annees.at(-1).annee, 2026);
-  assert.equal(annees.find((a) => a.annee === 2011).moments.length, 0);
-  assert.equal(annees.find((a) => a.annee === 2025).moments.length, 3);
+  assert.equal(annees.find((a) => a.annee === 2011).trophees.length, 0);
+  assert.equal(annees.find((a) => a.annee === 2025).trophees.length, 3);
   assert.equal(sansDate.length, 0);
 });
 
-test('un moment sans année va dans « Un jour », pas dans le ruban', () => {
-  const avec = [...MOMENTS, { id: 'x', genre: 'axe', axe: 'amis', titre: 'Un jour', niveau: 'cap', annee: null, date: null }];
+test('un trophée sans année va dans « Un jour », pas dans le ruban', () => {
+  const avec = lire([...MOMENTS, { id: 'x', reussite: null, titre: 'Un jour', niveau: 'argent', annee: null, date: null }], CATALOGUE, NAISSANCE);
   const { annees, sansDate } = ruban(avec, 2026);
-  assert.deepEqual(sansDate.map((m) => m.id), ['x']);
-  assert.ok(annees.every((a) => a.moments.every((m) => m.id !== 'x')));
+  assert.deepEqual(sansDate.map((t) => t.id), ['x']);
+  assert.ok(annees.every((a) => a.trophees.every((t) => t.id !== 'x')));
 });
 
-test('une vie sans rien de noté donne un ruban vide, sans erreur', () => {
+test('une vie sans rien de noté donne une page vide, sans erreur', () => {
   assert.deepEqual(ruban([], 2026), { debut: null, annees: [], sansDate: [] });
-  assert.deepEqual(comptes([], NIVEAUX), { total: 0, effort: 0, cap: 0, montagne: 0 });
+  assert.deepEqual(comptes([]), { total: 0, or: 0, argent: 0, bronze: 0 });
   assert.equal(souvenirDuJour([], AUJOURDHUI), null);
+  assert.deepEqual(lire([], CATALOGUE), []);
 });
 
 // ---------- Souvenir du jour ----------
 
 test('le souvenir du jour : l’anniversaire du semi-marathon, il y a 2 ans', () => {
-  const s = souvenirDuJour(MOMENTS, AUJOURDHUI);
-  assert.equal(s.moment.id, 'semi');
+  const s = souvenirDuJour(VUS, AUJOURDHUI);
+  assert.equal(s.trophee.id, 'semi');
   assert.equal(s.ans, 2);
   assert.equal(s.anniversaire, true);
 });
 
-test('sans anniversaire, un moment au hasard, le même toute la journée, avec son âge', () => {
-  const a = souvenirDuJour(MOMENTS, '2026-10-06');
-  const b = souvenirDuJour(MOMENTS, '2026-10-06');
+test('sans anniversaire, un trophée au hasard, le même toute la journée, avec son âge', () => {
+  const a = souvenirDuJour(VUS, '2026-10-06');
+  const b = souvenirDuJour(VUS, '2026-10-06');
   assert.equal(a.anniversaire, false);
-  assert.equal(a.moment.id, b.moment.id);
-  assert.equal(a.ans, 2026 - a.moment.annee);
+  assert.equal(a.trophee.id, b.trophee.id);
+  assert.equal(a.ans, 2026 - a.trophee.annee);
 });
 
-test('un moment marqué « pas de rappel » ne ressort jamais', () => {
-  for (let i = 0; i <= 50; i += 1) {
-    assert.notEqual(souvenirDuJour(MOMENTS, '2026-01-01', i / 50).moment.rappel, false);
-  }
-});
-
-test('un moment sans année ressort sans âge', () => {
-  const seul = [{ id: 'x', genre: 'axe', axe: 'amis', titre: 'Un jour', niveau: 'cap', annee: null, date: null }];
-  assert.equal(souvenirDuJour(seul, AUJOURDHUI).ans, null);
+test('un trophée marqué « pas de rappel » ne ressort jamais', () => {
+  for (let i = 0; i <= 50; i += 1) assert.notEqual(souvenirDuJour(VUS, '2026-01-01', i / 50).trophee.rappel, false);
 });
 
 // ---------- Carte de vie ----------
@@ -151,8 +226,7 @@ test('la carte se compare au point d’il y a 3 mois', () => {
   const avant = pointDavant(POINTS, actuel);
   assert.equal(actuel.mois, '2026-09');
   assert.equal(avant.mois, '2026-06');
-  assert.deepEqual(ecartsRoue(actuel, avant, DOMAINES).hausse.map((h) => [h.id, h.ecart]),
-    [['amour', 2], ['sante', 1], ['proches', 1], ['cadre', 1]]);
+  assert.deepEqual(ecartsRoue(actuel, avant, DOMAINES).hausse.map((h) => [h.id, h.ecart]), [['amour', 2], ['sante', 1], ['proches', 1], ['cadre', 1]]);
   assert.equal(phraseRoue(actuel, avant, DOMAINES), 'Amour, Santé, Proches et Cadre de vie montent depuis juin. Le reste tient bon.');
 });
 

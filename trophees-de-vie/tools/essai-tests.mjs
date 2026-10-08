@@ -8,12 +8,19 @@ const origine = readFileSync(FICHIER, 'utf8');
 
 const DEFAUTS = [
   ['un moment retiré compte encore', 'const vivant = (x) => !x.supprimeLe;', 'const vivant = (x) => true;'],
-  ['« pas de rappel » est ignoré', "filter((m) => m.rappel !== false)", 'filter(() => true)'],
-  ['un passage entre dans un axe', "m.genre === 'axe' && m.axe === a.id", 'm.axe === a.id || (m.genre === "passage" && a.id === "vivre")'],
+  ['« pas de rappel » est ignoré', 'filter((t) => t.rappel !== false)', 'filter(() => true)'],
+  ['le seuil de l’or glisse', "part <= SEUILS.or ? 'or'", "part < SEUILS.or ? 'or'"],
+  ['la médaille choisie passe avant le chiffre', 'if (part != null) return part <= SEUILS.or', 'if (part != null && !m.niveau) return part <= SEUILS.or'],
+  ['« Top » est donné à l’argent aussi', "top: niveau === 'or' && part != null ? top(part) : null", 'top: part != null ? top(part) : null'],
+  ['« Top 0 % » devient possible', 'Math.max(1, Math.round(part * 100))', 'Math.round(part * 100)'],
+  ['l’âge est ignoré', 'return def.parAge.find((t) => t.avant == null || age < t.avant).part;', 'return def.parAge.at(-1).part;'],
+  ['la tranche d’âge est décalée d’un an', 't.avant == null || age < t.avant', 't.avant == null || age <= t.avant'],
+  ['les anciens niveaux ne sont plus lus', 'const choisie = ANCIENS[m.niveau] ?? m.niveau;', 'const choisie = m.niveau;'],
+  ['les anciens identifiants ne sont plus reconnus', 'const vrai = catalogue.alias[id] ?? id;', 'const vrai = id;'],
+  ['la catégorie choisie à la main est ignorée', 'categorie: m.categorie ?? def?.categorie ?? null', 'categorie: def?.categorie ?? m.categorie ?? null'],
   ['plus de trois hauts faits', '.sort(parTemps).slice(0, 3)', '.sort(parTemps)'],
   ['hausse et baisse inversées', '(a > b ? hausse : baisse)', '(a < b ? hausse : baisse)'],
-  ['les années vides disparaissent du ruban', 'for (let a = debut; a <= fin; a += 1) annees.push(', 'for (let a = debut; a <= fin; a += 1) if (dates.some((m) => m.annee === a)) annees.push('],
-  ['un moment sans année entre dans le ruban', 'const dates = actifs.filter((m) => m.annee);', 'const dates = actifs.map((m) => ({ ...m, annee: m.annee || anneeFin }));'],
+  ['les années vides disparaissent du ruban', 'for (let a = debut; a <= fin; a += 1) annees.push(', 'for (let a = debut; a <= fin; a += 1) if (dates.some((t) => t.annee === a)) annees.push('],
   ['l’anniversaire du jour est ignoré', 'if (anniversaires.length) return', 'if (false) return'],
   ['on compare au point du même mois', 'decalerMois(actuel.mois, -ecart)', 'decalerMois(actuel.mois, 0)'],
 ];

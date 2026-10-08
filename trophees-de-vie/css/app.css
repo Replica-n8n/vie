@@ -200,3 +200,25 @@ button.cell:hover{border-color:rgba(255,255,255,.6)}
 .puce .niv button{width:44px;height:44px;border-radius:12px;background:transparent}
 .groupe{display:grid;gap:8px}
 .groupe .lab{margin:6px 0 0}
+
+/* Trophées : une coupe, à plat, sans reflet. La couleur dit le métal, la taille aussi,
+   pour qu'on les distingue sans la couleur. Ces règles remplacent les lunes. */
+:root{ --m-or:#F2C261; --m-argent:#D5DBE6; --m-bronze:#E3AE82;
+  --coupe:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M6 3h12v2h3v3a4 4 0 0 1-4 4h-.3A6 6 0 0 1 13 15.9V18h3v3H8v-3h3v-2.1A6 6 0 0 1 7.3 12H7a4 4 0 0 1-4-4V5h3V3zM5 7v1a2 2 0 0 0 1 1.7V7H5zm14 0h-1v2.7A2 2 0 0 0 19 8V7z'/%3E%3C/svg%3E") }
+.m{border:0;border-radius:0;box-shadow:none;background:var(--m-argent);-webkit-mask:var(--coupe) center/contain no-repeat;mask:var(--coupe) center/contain no-repeat;width:18px;height:18px}
+.m.or{background:var(--m-or);width:22px;height:22px}
+.m.bronze{background:var(--m-bronze);width:15px;height:15px}
+.m.g{width:28px;height:28px}
+.m.g.or{width:34px;height:34px}
+.m.g.bronze{width:23px;height:23px}
+.sv .k{display:flex;align-items:center;gap:8px}
+.an{gap:4px}
+.cell .pts{gap:3px;align-items:flex-end}
+.leg{gap:5px 14px}
+.niv button .m{width:22px;height:22px}
+
+/* Sept tuiles : le total et six catégories */
+.ax{grid-template-columns:1.35fr repeat(6,minmax(0,1fr));gap:clamp(8px,.8vw,14px)}
+.cell{padding-inline:clamp(12px,1.1vw,22px)}
+.cell .num{font-size:clamp(40px,4.6vw,76px)}
+@media (max-width:900px){ .ax{grid-template-columns:repeat(2,minmax(0,1fr))} }
