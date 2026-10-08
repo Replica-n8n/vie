@@ -18,6 +18,8 @@ const DEFAUTS = [
   ['les anciens niveaux ne sont plus lus', 'const choisie = ANCIENS[m.niveau] ?? m.niveau;', 'const choisie = m.niveau;'],
   ['les anciens identifiants ne sont plus reconnus', 'const vrai = catalogue.alias[id] ?? id;', 'const vrai = id;'],
   ['la catégorie choisie à la main est ignorée', 'categorie: m.categorie ?? def?.categorie ?? null', 'categorie: def?.categorie ?? m.categorie ?? null'],
+  ['les âges sont décalés d’un an', 'Math.floor((a - naissance) / 10) * 10', 'Math.floor((a - naissance + 1) / 10) * 10'],
+  ['un trophée précisé est encore « à préciser »', 'm.titre === def.titre || m.titre === def.ancienTitre', 'true'],
   ['plus de trois hauts faits', '.sort(parTemps).slice(0, 3)', '.sort(parTemps)'],
   ['hausse et baisse inversées', '(a > b ? hausse : baisse)', '(a < b ? hausse : baisse)'],
   ['les années vides disparaissent du ruban', 'for (let a = debut; a <= fin; a += 1) annees.push(', 'for (let a = debut; a <= fin; a += 1) if (dates.some((t) => t.annee === a)) annees.push('],

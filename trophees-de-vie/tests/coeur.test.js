@@ -5,7 +5,7 @@ import { NIVEAUX, CATEGORIES, REUSSITES, ALIAS, CATALOGUE } from '../js/config/v
 import { DOMAINES, METEOS, ELANS } from '../js/config/domaines.js';
 import { MOMENTS, POINTS, NAISSANCE } from './exemple.js';
 import {
-  SEUILS, definition, rarete, medaille, top, lire, dejaFaites, comptes, parCategorie, hautsFaits, ruban, souvenirDuJour,
+  SEUILS, definition, rarete, medaille, top, lire, dejaFaites, comptes, parCategorie, hautsFaits, ruban, decennies, souvenirDuJour,
   decalerMois, dernierPoint, pointDavant, ecartsRoue, phraseRoue,
 } from '../js/coeur.js';
 
@@ -190,6 +190,28 @@ test('une vie sans rien de noté donne une page vide, sans erreur', () => {
   assert.deepEqual(comptes([]), { total: 0, or: 0, argent: 0, bronze: 0 });
   assert.equal(souvenirDuJour([], AUJOURDHUI), null);
   assert.deepEqual(lire([], CATALOGUE), []);
+});
+
+test('les âges sous le ruban : une tranche par dizaine, comptée en années', () => {
+  assert.deepEqual(decennies(2009, 2026, NAISSANCE), [
+    { tranche: 10, nom: 'l’adolescence', annees: 3 },
+    { tranche: 20, nom: 'la vingtaine', annees: 10 },
+    { tranche: 30, nom: 'la trentaine', annees: 5 },
+  ]);
+  assert.equal(decennies(2009, 2026, NAISSANCE).reduce((n, d) => n + d.annees, 0), 18, 'chaque année du ruban est couverte une fois');
+  assert.deepEqual(decennies(1990, 1992, 1992).map((d) => d.nom), ['l’enfance'], 'avant la naissance, on reste dans l’enfance');
+  assert.equal(decennies(2062, 2062, 1992)[0].nom, 'les 70 ans');
+});
+
+test('un trophée au titre général est « à préciser », un trophée précisé rappelle sa réussite', () => {
+  assert.equal(vu('permis').aPreciser, true);
+  assert.equal(vu('permis').modele, null);
+  assert.equal(vu('licence').aPreciser, false);
+  assert.equal(vu('licence').modele, 'Un diplôme du supérieur');
+  assert.equal(vu('bac').aPreciser, false, 'écrit à la main : rien à préciser');
+  assert.equal(vu('bac').modele, null);
+  const v1 = lire([{ id: 'p', genre: 'passage', passage: 'diplome', titre: 'Un diplôme', niveau: 'cap', annee: 2011 }], CATALOGUE)[0];
+  assert.equal(v1.aPreciser, true, 'le titre de la version 1 est reconnu comme général');
 });
 
 // ---------- Souvenir du jour ----------

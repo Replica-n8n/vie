@@ -81,7 +81,7 @@ try {
   await page.click('#dlg-next');
   await page.click('#pu-vivre-etranger'); await page.fill('#an-vivre-etranger', '3000');
   await page.click('#pu-marathon'); await page.fill('#an-marathon', '2008');
-  await page.click('#pu-enfant');
+  await page.click('#pu-enfant'); await page.fill('#de-enfant', 'La naissance de Lou');
   verifier('« Me relever d’un coup dur » n’est plus proposé', !(await page.$('#pu-rebondir')));
   await page.screenshot({ path: join(CAPTURES, 'ajouter-2.png') });
   await page.click('#dlg-next');
@@ -93,6 +93,7 @@ try {
   verifier('six trophées ajoutés : le total et les catégories suivent', (await nombres()) === '6/1/1/1/1/1/1', await nombres());
   verifier('la légende compte les médailles : la rareté décide, sinon le choix', (await texte('.leg')).replace(/ /g, '') === '4enor2enbronze', await texte('.leg'));
   verifier('acheté à 29 ans : en or, grâce à l’année de naissance', (await page.$$('.cell:nth-child(4) .m.or')).length === 1);
+  verifier('le ruban montre les âges : adolescence, vingtaine, trentaine', (await page.$$eval('#ages span', (xs) => xs.map((x) => x.textContent).join('|'))) === 'l’adolescence|la vingtaine|la trentaine', await page.$$eval('#ages span', (xs) => xs.map((x) => x.textContent).join('|')));
   verifier('une année impossible est ignorée, le ruban va de 2008 à aujourd’hui', (await page.$$('#ruban .an')).length === AN - 2008 + 1);
 
   // ---------- Persistance ----------
@@ -137,6 +138,7 @@ try {
   // ---------- Tout voir ----------
   await page.click('#btn-parcours');
   verifier('le parcours liste les huit trophées', (await page.$$('.annee li')).length === 8);
+  verifier('une réussite précisée à la saisie porte sa précision', (await texte('.dlg-body')).includes('La naissance de Lou') && !(await texte('.dlg-body')).includes('Avoir un enfant'));
   verifier('le trophée sans année est rangé dans « Un jour »', (await texte('.annee:last-child')).includes('Un jour') && (await texte('.annee:last-child')).includes('Vivre dans un autre pays'));
   verifier('« Top N % » se lit sur l’or qui a un chiffre, et seulement là', (await texte('.annee li:has-text("Un master")')).includes('Top 16 %') && (await texte('.annee li:has-text("Acheter mon logement")')).includes('Top 17 %') && !(await texte('.annee li:has-text("Un diplôme du supérieur")')).includes('Top') && !(await texte('.annee li:has-text("Courir un marathon")')).includes('Top'));
   await page.screenshot({ path: join(CAPTURES, 'parcours.png') });
@@ -194,6 +196,18 @@ try {
   });
   await ouvrirPage('essai-ancien');
   verifier('ses six passages de la version 1 se rangent dans les catégories', (await nombres()) === '8/1/2/2/2/+/+', await nombres());
+  verifier('sans année de naissance, le ruban propose de la donner', (await texte('#ages')) === 'Situer mes trophées à mon âge');
+  await page.click('#ages');
+  await page.fill('#naissance', '1990'); await page.click('#dlg-next'); await annonce('C’est noté');
+  verifier('l’année de naissance se donne depuis le ruban, et les âges apparaissent', (await page.$$eval('#ages span', (xs) => xs.map((x) => x.textContent).filter(Boolean).join('|'))) === 'la vingtaine|la trentaine' && (await page.$$('#ages span')).length === 3, await texte('#ages'));
+  await page.waitForFunction(() => !document.querySelector('#toast.on'));
+  verifier('le bandeau propose de préciser un trophée au titre général', (await texte('#preciser')) === 'Préciser lequel');
+  const general = await texte('#sv .t');
+  await page.click('#preciser');
+  verifier('« Préciser lequel » ouvre ce trophée', (await page.inputValue('#q-edit')) === general, await page.inputValue('#q-edit'));
+  await page.fill('#q-edit', 'Mon précisé à moi'); await page.click('#dlg-next'); await annonce('C’est noté');
+  verifier('précisé, le bandeau rappelle la réussite et ne propose plus rien', (await texte('#sv .t')) === 'Mon précisé à moi' && !(await page.$('#preciser')) && (await page.isHidden('.dlg')), await texte('#sv'));
+  await page.waitForFunction(() => !document.querySelector('#toast.on'));
   verifier('ce qui venait des anciens axes garde sa médaille ou prend celle de sa rareté', (await texte('.leg')).replace(/ /g, '') === '2enor6enargent', await texte('.leg'));
   await page.click('#btn-add');
   verifier('ses anciens passages restent cochés', await page.isDisabled('#pu-diplome') && await page.isDisabled('#pu-premier-emploi'));

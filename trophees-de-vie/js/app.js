@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=6';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE } from './config/vie.js?v=6';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=6';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, ruban, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=6';
+import { ouvrir, demanderPersistance } from './stockage.js?v=7';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE } from './config/vie.js?v=7';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=7';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=7';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -73,9 +73,15 @@ function dessinerSouvenir() {
     : s.ans === 0 ? 'Cette année'
       : `Il y a ${s.ans} an${s.ans > 1 ? 's' : ''}${s.anniversaire ? ' aujourd’hui' : ''}`;
   const tete = el('p', 'k');
-  tete.append(coupe(s.trophee.niveau), [quand, s.trophee.top].filter(Boolean).join(' · '));
+  tete.append(coupe(s.trophee.niveau), [quand, s.trophee.modele, s.trophee.top].filter(Boolean).join(' · '));
   sv.append(tete, el('p', 't', s.trophee.titre));
   if (s.trophee.note) sv.append(el('p', 'q', `« ${s.trophee.note} »`));
+  if (s.trophee.aPreciser) {
+    const b = bouton('lien', 'Préciser lequel');
+    b.id = 'preciser';
+    b.addEventListener('click', () => ouvrirEdition(etat.moments.find((m) => m.id === s.trophee.id), 'page'));
+    sv.append(b);
+  }
 }
 
 function dessinerChiffres() {
@@ -121,6 +127,29 @@ function dessinerRuban(vie) {
   const fin = vie.annees.at(-1).annee;
   const reperes = fin - vie.debut >= 4 ? [vie.debut, Math.round((vie.debut + fin) / 2), fin] : fin > vie.debut ? [vie.debut, fin] : [fin];
   for (const a of reperes) lb.append(el('span', null, String(a)));
+}
+
+// Sous le ruban, les âges de la vie. Sans année de naissance, la place sert à la demander :
+// c'est là qu'on la trouve, et c'est aussi là qu'on la change.
+function dessinerAges(vie) {
+  $('ages')?.remove();
+  if (vie.debut == null) return;
+  const b = bouton('ages');
+  b.id = 'ages';
+  if (!etat.naissance) {
+    b.classList.add('lien');
+    b.textContent = 'Situer mes trophées à mon âge';
+  } else {
+    b.title = 'Changer mon année de naissance';
+    b.setAttribute('aria-label', `Tes âges, née en ${etat.naissance}. Changer mon année de naissance`);
+    for (const d of decennies(vie.debut, vie.annees.at(-1).annee, etat.naissance)) {
+      const s = el('span', null, d.annees >= 3 ? d.nom : '');
+      s.style.setProperty('--n', d.annees);
+      b.append(s);
+    }
+  }
+  b.addEventListener('click', ouvrirNaissance);
+  $('ans').after(b);
 }
 
 function dessinerHautsFaits() {
@@ -187,7 +216,9 @@ function dessiner() {
   heure();
   dessinerSouvenir();
   dessinerChiffres();
-  dessinerRuban(ruban(etat.vus, an()));
+  const vie = ruban(etat.vus, an());
+  dessinerRuban(vie);
+  dessinerAges(vie);
   dessinerHautsFaits();
   dessinerMoment();
 }
@@ -310,9 +341,16 @@ function puces(corps, reussites, coches, deja, quandChange) {
     if (fait) { b.disabled = true; b.title = 'Déjà dans ta vie'; }
     boite.append(b);
     if (fait || reponse) boite.classList.add('on');
+    if (reponse) {
+      const d = el('input', 'detail');
+      d.type = 'text'; d.id = `de-${r.id}`; d.maxLength = 80; d.placeholder = 'Lequel ? (facultatif)'; d.value = reponse.detail ?? '';
+      d.setAttribute('aria-label', `Précision pour : ${r.titre}, facultative`);
+      d.addEventListener('input', () => { reponse.detail = d.value; });
+      boite.append(d);
+    }
     if (reponse && !r.sansAnnee) boite.append(champAnnee(`an-${r.id}`, reponse.annee, `Année de : ${r.titre}, facultative`, (v) => { reponse.annee = v; }, 'Année (facultatif)'));
     b.addEventListener('click', () => {
-      if (coches.has(r.id)) coches.delete(r.id); else coches.set(r.id, { annee: '', niveau: r.defaut ?? 'argent' });
+      if (coches.has(r.id)) coches.delete(r.id); else coches.set(r.id, { annee: '', detail: '', niveau: r.defaut ?? 'argent' });
       const neuve = dessinerUne(r);
       boite.replaceWith(neuve);
       quandChange?.();
@@ -346,7 +384,10 @@ const groupe = (cat) => REUSSITES.filter((r) => r.categorie === cat.id);
 
 // Les moments à écrire à partir de ce qui est coché.
 function momentsCoches(coches) {
-  return REUSSITES.filter((r) => coches.has(r.id)).map((r) => moment({ titre: r.titre, ...coches.get(r.id) }, { reussite: r.id }));
+  return REUSSITES.filter((r) => coches.has(r.id)).map((r) => {
+    const c = coches.get(r.id);
+    return moment({ ...c, titre: (c.detail ?? '').trim() || r.titre }, { reussite: r.id });
+  });
 }
 
 // L'année de naissance situe une réussite à l'âge où elle a été faite.
@@ -412,6 +453,12 @@ function ouvrirAjout() {
     { label: 'Ta vie', titre: 'Coche tout ce que tu as déjà fait', dessiner: ecran(CATEGORIES.slice(0, moitie), true) },
     { label: 'Ta vie', titre: 'Et ça aussi ?', dessiner: ecran(CATEGORIES.slice(moitie), false) },
   ], 'Ajouter à ma vie', () => enregistrer(momentsCoches(coches), naissance, true));
+}
+
+// L'année de naissance seule : on y arrive par le ruban.
+function ouvrirNaissance() {
+  const naissance = { valeur: etat.naissance ?? '' };
+  ouvrirVolet('add', [{ label: 'Ta vie', titre: 'Ton âge', dessiner(corps) { champNaissance(corps, naissance); } }], 'Enregistrer', () => enregistrer([], naissance));
 }
 
 // Une catégorie seule, ouverte depuis sa tuile.
@@ -526,7 +573,8 @@ function ouvrirParcours() {
   } }], 'Fermer', async () => fermerVolet());
 }
 
-function ouvrirEdition(m) {
+// `retour` : où l'on revient après avoir enregistré, le parcours ou la page.
+function ouvrirEdition(m, retour = 'parcours') {
   const def = definition(m, CATALOGUE);
   const part = rarete(m, def, etat.naissance);
   const r = { titre: m.titre, annee: m.annee ?? '', niveau: medaille(part, m, def), note: m.note ?? '', categorie: m.categorie ?? def?.categorie ?? null };
@@ -550,7 +598,7 @@ function ouvrirEdition(m) {
   } }], 'Enregistrer', async () => {
     if (rempli(r)) await etat.base.ecrire('moments', { ...m, titre: r.titre.trim(), annee: anneeValide(r.annee), niveau: r.niveau, note: r.note.trim(), categorie: def ? m.categorie ?? null : r.categorie });
     await rafraichir();
-    ouvrirParcours();
+    if (retour === 'page') { fermerVolet(); annoncer('C’est noté', r.titre.trim() || m.titre); } else ouvrirParcours();
   });
 }
 

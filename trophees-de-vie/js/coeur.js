@@ -22,7 +22,7 @@ import { MOIS } from './config/domaines.js';
  * @property {boolean} [rappel]       false : ne ressort jamais en souvenir du jour
  * @property {string|null} [supprimeLe]
  *
- * @typedef {Moment & {niveau:'or'|'argent'|'bronze', part:number|null, top:string|null, categorie:string|null}} Trophee
+ * @typedef {Moment & {niveau:'or'|'argent'|'bronze', part:number|null, top:string|null, categorie:string|null, modele:string|null, aPreciser:boolean}} Trophee
  *   un moment tel que la page le montre, après `lire`
  *
  * @typedef {object} Point            un « point du mois »
@@ -83,7 +83,13 @@ export function lire(moments, catalogue, naissance = null) {
     const def = definition(m, catalogue);
     const part = rarete(m, def, naissance);
     const niveau = medaille(part, m, def);
-    return { ...m, niveau, part, top: niveau === 'or' && part != null ? top(part) : null, categorie: m.categorie ?? def?.categorie ?? null };
+    // `aPreciser` : le trophée porte encore le titre général de sa réussite (« Un diplôme »,
+    // mais lequel ?). `modele` : ce titre général, à rappeler une fois le trophée précisé.
+    const aPreciser = Boolean(def) && (m.titre === def.titre || m.titre === def.ancienTitre);
+    return {
+      ...m, niveau, part, top: niveau === 'or' && part != null ? top(part) : null, categorie: m.categorie ?? def?.categorie ?? null,
+      modele: def && !aPreciser ? def.titre : null, aPreciser,
+    };
   });
 }
 
@@ -129,6 +135,24 @@ export function ruban(trophees, anneeFin) {
   const annees = [];
   for (let a = debut; a <= fin; a += 1) annees.push({ annee: a, trophees: dates.filter((t) => t.annee === a).sort(parTemps) });
   return { debut, annees, sansDate };
+}
+
+// Les âges de la vie sous le ruban : une tranche par dizaine d'années.
+const TRANCHES = { 0: 'l’enfance', 10: 'l’adolescence', 20: 'la vingtaine', 30: 'la trentaine', 40: 'la quarantaine', 50: 'la cinquantaine', 60: 'la soixantaine' };
+
+/**
+ * Les tranches d'âge traversées de `debut` à `fin`, dans l'ordre, avec le nombre
+ * d'années du ruban que chacune couvre.
+ * @returns {{tranche:number, nom:string, annees:number}[]}
+ */
+export function decennies(debut, fin, naissance) {
+  const tranches = [];
+  for (let a = debut; a <= fin; a += 1) {
+    const tranche = Math.max(0, Math.floor((a - naissance) / 10) * 10);
+    if (tranches.at(-1)?.tranche === tranche) tranches.at(-1).annees += 1;
+    else tranches.push({ tranche, nom: TRANCHES[tranche] ?? `les ${tranche} ans`, annees: 1 });
+  }
+  return tranches;
 }
 
 // ---------- Souvenir du jour ----------

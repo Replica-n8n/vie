@@ -35,7 +35,9 @@ export const CATEGORIES = [
 // ⚠️ Un identifiant ne se renomme jamais : les moments gardés le portent.
 export const REUSSITES = [
   // OCDE, Regards sur l'éducation 2025 : 41,2 % des 25-64 ans ont un diplôme du supérieur.
-  { id: 'diplome', titre: 'Un diplôme du supérieur', categorie: 'apprendre', rarete: 0.41 },
+  // `ancienTitre` : le titre que la version 1 donnait à cette réussite. Il sert à
+  // reconnaître qu'un trophée gardé n'a pas encore été précisé.
+  { id: 'diplome', titre: 'Un diplôme du supérieur', ancienTitre: 'Un diplôme', categorie: 'apprendre', rarete: 0.41 },
   // OCDE, Regards sur l'éducation 2025 (notes par pays) : 16 % des 25-34 ans ont un master.
   { id: 'master', titre: 'Un master', categorie: 'apprendre', rarete: 0.16 },
   // OCDE, Education GPS : 1,2 % des 25-64 ans ont un doctorat (2024).
