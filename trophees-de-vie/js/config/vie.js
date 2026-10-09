@@ -13,11 +13,12 @@ export const NIVEAUX = [
 ];
 
 // `badge` : le nom gagné quand la catégorie compte au moins trois trophées.
+// Tous les textes sont neutres : la page s'adresse à tout le monde, pas à une femme.
 export const CATEGORIES = [
   { id: 'apprendre', nom: 'Apprendre', badge: 'Tête bien faite' },
-  { id: 'travailler', nom: 'Travailler', badge: 'Bâtisseuse' },
-  { id: 'installer', nom: 'S’installer', badge: 'Bien ancrée' },
-  { id: 'partir', nom: 'Partir', badge: 'Globe-trotteuse' },
+  { id: 'travailler', nom: 'Travailler', badge: 'Cœur à l’ouvrage' },
+  { id: 'installer', nom: 'S’installer', badge: 'Racines solides' },
+  { id: 'partir', nom: 'Partir', badge: 'Globe-trotter' },
   { id: 'aimer', nom: 'Aimer', badge: 'Grand cœur' },
   { id: 'depasser', nom: 'Se dépasser', badge: 'Sans limites' },
 ];
@@ -72,12 +73,12 @@ export const REUSSITES = [
   { id: 'epargne', titre: 'Mettre de l’argent de côté', categorie: 'installer', defaut: 'bronze', sansAnnee: true },
 
   { id: 'grand-voyage', titre: 'Un grand voyage', categorie: 'partir', defaut: 'argent' },
-  { id: 'voyager-seule', titre: 'Voyager seule', categorie: 'partir', defaut: 'argent' },
+  { id: 'voyager-seule', titre: 'Voyager en solo', ancienTitre: 'Voyager seule', categorie: 'partir', defaut: 'argent' },
   // ONU, 2024 : 3,7 % de la population mondiale vit hors de son pays de naissance.
   { id: 'vivre-etranger', titre: 'Vivre dans un autre pays', categorie: 'partir', rarete: 0.037 },
   { id: 'etudier-etranger', titre: 'Étudier à l’étranger', categorie: 'partir', defaut: 'argent' },
 
-  { id: 'tomber-amoureuse', titre: 'Tomber amoureuse', categorie: 'aimer', defaut: 'bronze' },
+  { id: 'tomber-amoureuse', titre: 'Vivre une histoire d’amour', ancienTitre: 'Tomber amoureuse', categorie: 'aimer', defaut: 'bronze' },
   { id: 'mariage', titre: 'Me marier', categorie: 'aimer', defaut: 'bronze' },
   { id: 'enfant', titre: 'Avoir un enfant', categorie: 'aimer', defaut: 'bronze' },
   { id: 'amis-longue-date', titre: 'Garder une amitié de longue date', categorie: 'aimer', defaut: 'argent', sansAnnee: true },

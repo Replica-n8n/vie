@@ -229,7 +229,7 @@ try {
   await page.click('.dlg .opt:has-text("Partir")'); await page.click('#dlg-next'); await page.waitForSelector('.annee');
   await page.click('#dlg-next');
   verifier('rangée, elle entre dans sa tuile', (await nombres()) === '8/1/2/2/3/+/+', await nombres());
-  verifier('trois trophées dans « Partir » : le badge « Globe-trotteuse »', (await texte('.cell.axe >> nth=3 >> .badge')) === 'Globe-trotteuse');
+  verifier('trois trophées dans « Partir » : le badge « Globe-trotter »', (await texte('.cell.axe >> nth=3 >> .badge')) === 'Globe-trotter');
   await page.screenshot({ path: join(CAPTURES, 'ancienne-base.png') });
 
   // ---------- Une vie d'exemple : tailles, contrastes, captures ----------

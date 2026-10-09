@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=10';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=10';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=10';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=10';
+import { ouvrir, demanderPersistance } from './stockage.js?v=11';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=11';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=11';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=11';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -169,7 +169,7 @@ function dessinerAges(vie) {
     b.textContent = 'Situer mes trophées à mon âge';
   } else {
     b.title = 'Changer mon année de naissance';
-    b.setAttribute('aria-label', `Tes âges, née en ${etat.naissance}. Changer mon année de naissance`);
+    b.setAttribute('aria-label', `Tes âges, naissance en ${etat.naissance}. Changer mon année de naissance`);
     for (const d of decennies(vie.debut, vie.annees.at(-1).annee, etat.naissance)) {
       const s = el('span', null, d.annees >= 3 ? d.nom : '');
       s.style.setProperty('--n', d.annees);

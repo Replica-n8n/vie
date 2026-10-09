@@ -55,6 +55,11 @@ test('les anciens identifiants pointent vers des réussites qui existent', () =>
   }
 });
 
+test('la configuration : des textes neutres, pour tout le monde', () => {
+  const textes = [...CATEGORIES.flatMap((c) => [c.nom, c.badge]), ...REUSSITES.map((r) => r.titre), BADGE_TOUT];
+  for (const texte of textes) assert.ok(!/(seule?|amoureu(x|se)|née?|ancrée?|S+(euse|eur|trice))/i.test(texte), `texte genré : « ${texte} »`);
+});
+
 test('la configuration : aucun tiret long, aucun mot médical', () => {
   const textes = [...NIVEAUX, ...CATEGORIES, ...REUSSITES, ...DOMAINES].flatMap((x) => [x.titre, x.nom].filter(Boolean)).concat(METEOS, ELANS);
   for (const texte of textes) {
