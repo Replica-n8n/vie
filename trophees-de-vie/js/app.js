@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=13';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=13';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=13';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=13';
+import { ouvrir, demanderPersistance } from './stockage.js?v=14';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=14';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=14';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=14';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -134,7 +134,9 @@ function dessinerChiffres() {
     const n = cat.trophees.length;
     const tete = el('span', 'cat-t');
     const badge = gagnes.find((g) => g.id === cat.id);
-    tete.append(el('span', 'cat-n', cat.nom), el('span', 'nb', n ? String(n) : '+'));
+    const picto = el('span', `pi pi-${cat.id}`);
+    picto.setAttribute('aria-hidden', 'true');
+    tete.append(picto, el('span', 'cat-n', cat.nom), el('span', 'nb', n ? String(n) : '+'));
     if (badge) tete.append(el('span', 'badge', badge.nom));
     const liste = el('span', 'cat-l');
     for (const t of plusRares(cat.trophees, montres)) {
@@ -160,7 +162,13 @@ function dessinerRuban(vie) {
   lb.textContent = '';
   for (const a of vie.annees) {
     const col = el('div', 'an');
-    for (const t of a.trophees) { const c = coupe(t.niveau); c.title = `${t.titre} · ${a.annee}`; col.append(c); }
+    for (const t of a.trophees) {
+      const c = coupe(t.niveau);
+      c.classList.add('jeton');
+      c.title = `${t.titre} · ${a.annee}`;
+      c.append(el('span', `pi${t.categorie ? ` pi-${t.categorie}` : ''}`));
+      col.append(c);
+    }
     rb.append(col);
   }
   if (vie.debut == null) { lb.append(el('span', null, String(an()))); return; }

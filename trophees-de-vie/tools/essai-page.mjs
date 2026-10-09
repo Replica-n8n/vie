@@ -298,6 +298,7 @@ try {
     });
     verifier(`les blocs sont alignés sur trois colonnes égales en ${w} × ${h}`, ecarts.every((x) => Math.abs(x) < 1), JSON.stringify(ecarts));
   }
+  verifier('chaque tuile porte son pictogramme, et le ruban montre un jeton par trophée daté', (await page.$$('#axes .cat-t .pi')).length === 6 && (await page.$$('#ruban .jeton')).length === 21 && (await page.$$('#ruban .jeton .pi-partir')).length === 2, String((await page.$$('#ruban .jeton')).length));
   verifier('la vie d’exemple : 21 trophées dans six catégories', (await nombres()) === '21/4/4/3/2/2/5', await nombres());
   verifier('le souvenir du jour est l’anniversaire', (await texte('#sv')).includes('Il y a 2 ans aujourd’hui') && (await texte('#sv')).includes('semi-marathon'), await texte('#sv'));
   verifier('les hauts faits disent leur rareté', (await texte('#feats')).includes('Top 16 %') && (await texte('#feats')).includes('Top 4 %') && (await texte('#feats')).includes('Top 17 %'), await texte('#feats'));
@@ -330,6 +331,13 @@ try {
       return { sel: z.sel, pire, seuil: z.gros ? 3 : 4.5 };
     });
   }, { capture, zones: [...zones, ...radarTextes, ...coupes] });
+  // Le pictogramme sombre doit se lire sur chacun des trois métaux.
+  const jetons = await page.evaluate(() => {
+    const canal = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+    const lum = (c) => { const [r, g, b] = c.match(/[\d.]+/g).map(Number); return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b); };
+    return [...document.querySelectorAll('#ruban .jeton')].map((j) => { const a = lum(getComputedStyle(j).backgroundColor), b = lum(getComputedStyle(j.firstElementChild).backgroundColor); return { sel: `pictogramme sur ${j.className.split(' ')[1]}`, pire: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05), seuil: 3 }; });
+  });
+  mesures.push(...jetons);
   const bas = mesures.filter((x) => x.pire < x.seuil).map((x) => `${x.sel} ${x.pire.toFixed(2)}`);
   const plusBas = mesures.reduce((a, b) => (b.pire / b.seuil < a.pire / a.seuil ? b : a));
   verifier(`les contrastes tiennent sur les pixels en « ${ciel} » (le plus juste : ${plusBas.sel} à ${plusBas.pire.toFixed(2)})`, !bas.length, [...new Set(bas)].join(' ; '));
