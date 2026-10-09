@@ -117,6 +117,19 @@ try {
   await page.screenshot({ path: join(CAPTURES, 'categorie.png') });
   await page.click('#dlg-next'); await annonce('2 trophées ajoutés');
   verifier('une réussite écrite à la main entre dans la catégorie de la tuile', (await nombres()) === '8/3/1/1/1/1/1', await nombres());
+  // Depuis sa tuile, un trophée déjà enregistré se rouvre, se retire, et se remet.
+  await page.waitForFunction(() => !document.querySelector('#toast.on'));
+  await page.click('.cell.axe >> nth=0');
+  verifier('dans la tuile, les trophées déjà enregistrés proposent « modifier »', (await texte('#pu-master')).includes('modifier') && (await texte('.dlg-body')).includes('Le bac'));
+  await page.click('#pu-master');
+  verifier('toucher un trophée enregistré ouvre sa fiche', (await page.inputValue('#q-edit')) === 'Un master' && Boolean(await page.$('#retirer')));
+  await page.click('#retirer');
+  await annonce('Trophée retiré');
+  verifier('« Retirer ce trophée » l’enlève de la page', (await nombres()) === '7/2/1/1/1/1/1' && (await page.isHidden('.dlg')), await nombres());
+  await page.click('#toast button');
+  await page.waitForFunction(() => document.querySelector('#bl-total .num')?.textContent === '8');
+  verifier('« Annuler » le remet', (await nombres()) === '8/3/1/1/1/1/1', await nombres());
+  await page.waitForFunction(() => !document.querySelector('#toast.on'));
   verifier('un diplôme du supérieur est en argent', (await page.$$('#axes .cell:nth-child(1) .m.argent')).length === 1);
   verifier('trois trophées dans « Apprendre » : le badge « Tête bien faite »', (await texte('.cell.axe >> nth=0 >> .badge')) === 'Tête bien faite');
 

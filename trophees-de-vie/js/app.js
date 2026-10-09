@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=11';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=11';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=11';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=11';
+import { ouvrir, demanderPersistance } from './stockage.js?v=12';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=12';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=12';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=12';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -380,7 +380,9 @@ function question(corps, id, texte, reponse, { aide, sansNiveau } = {}) {
 // l'année, et seulement si c'est un événement. Sa médaille est celle de sa rareté ou
 // celle proposée : elle se change ensuite dans « Tout voir ». Déjà dans la vie, elle
 // reste cochée.
-function puces(corps, reussites, coches, deja, quandChange) {
+// `quandDeja` : ce qui se passe quand on touche une réussite déjà dans la vie. Sans lui,
+// elle reste cochée et inerte.
+function puces(corps, reussites, coches, deja, quandChange, quandDeja) {
   const c = el('div', 'chips');
   const dessinerUne = (r) => {
     const boite = el('div', 'puce');
@@ -388,6 +390,14 @@ function puces(corps, reussites, coches, deja, quandChange) {
     const reponse = coches.get(r.id);
     const b = bouton('puce-t', r.titre, fait || Boolean(reponse));
     b.id = `pu-${r.id}`;
+    if (fait && quandDeja) {
+      b.title = 'Déjà dans ta vie : modifier ou retirer';
+      b.append(el('span', 'crayon', 'modifier'));
+      b.addEventListener('click', () => quandDeja(r));
+      boite.append(b);
+      boite.classList.add('on');
+      return boite;
+    }
     if (fait) { b.disabled = true; b.title = 'Déjà dans ta vie'; }
     boite.append(b);
     if (fait || reponse) boite.classList.add('on');
@@ -522,7 +532,24 @@ function ouvrirCategorie(cat) {
   const coches = new Map();
   const libre = { niveau: 'argent' };
   ouvrirVolet('add', [{ label: 'Ta vie', titre: cat.nom, dessiner(corps) {
-    puces(corps, groupe(cat), coches, dejaFaites(etat.moments, CATALOGUE));
+    puces(corps, groupe(cat), coches, dejaFaites(etat.moments, CATALOGUE), null, (r) => {
+      const m = etat.moments.find((x) => definition(x, CATALOGUE)?.id === r.id);
+      if (m) ouvrirEdition(m, 'page');
+    });
+    // Les trophées écrits à la main dans cette catégorie se retrouvent ici aussi.
+    const libres = etat.vus.filter((t) => t.categorie === cat.id && !definition(t, CATALOGUE));
+    if (libres.length) {
+      const c = el('div', 'chips');
+      for (const t of libres) {
+        const boite = el('div', 'puce on');
+        const b = bouton('puce-t', t.titre, true);
+        b.append(el('span', 'crayon', 'modifier'));
+        b.addEventListener('click', () => ouvrirEdition(etat.moments.find((x) => x.id === t.id), 'page'));
+        boite.append(b);
+        c.append(boite);
+      }
+      corps.append(c);
+    }
     question(corps, 'libre', 'Une autre réussite ?', libre, { aide: 'Sans chiffre pour la situer, c’est toi qui choisis sa médaille.' });
   } }], 'Ajouter à ma vie', async () => {
     const nouveaux = momentsCoches(coches);
@@ -645,12 +672,20 @@ function ouvrirEdition(m, retour = 'parcours') {
     }
     const q = el('div', 'q');
     const lb = el('label', null, 'Un souvenir de ce jour-là ?');
+    const oter = bouton('lien', 'Retirer ce trophée');
+    oter.id = 'retirer';
+    oter.addEventListener('click', async () => {
+      await etat.base.retirer('moments', m.id);
+      await rafraichir();
+      if (retour === 'page') fermerVolet(); else ouvrirParcours();
+      annoncer('Trophée retiré', m.titre, { texte: 'Annuler', faire: async () => { await etat.base.remettre('moments', m.id); await rafraichir(); if (flux && retour !== 'page') ouvrirParcours(); } });
+    });
     const note = el('input', 'field');
     note.type = 'text'; note.id = 'q-note'; note.maxLength = 200; note.placeholder = 'Une phrase, si tu veux'; note.value = r.note;
     note.addEventListener('input', () => { r.note = note.value; });
     lb.htmlFor = note.id;
     q.append(lb, note);
-    corps.append(q);
+    corps.append(q, oter);
   } }], 'Enregistrer', async () => {
     if (rempli(r)) await etat.base.ecrire('moments', { ...m, titre: r.titre.trim(), annee: anneeValide(r.annee), niveau: r.niveau, note: r.note.trim(), categorie: def ? m.categorie ?? null : r.categorie });
     await rafraichir();

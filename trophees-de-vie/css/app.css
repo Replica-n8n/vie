@@ -315,3 +315,7 @@ h1{font-size:30px}
 #axes{column-gap:var(--gouttiere)}
 @media (max-height:800px){ .page{--gouttiere:16px} }
 @media (max-width:900px){ .page,.page.vide{grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "bl" "sv" "ax" "rb" "cv"} .page.vide{grid-template-areas:"top" "sv" "ax" "rb" "cv"} }
+
+/* v12 : une réussite déjà enregistrée se rouvre depuis sa tuile */
+.crayon{margin-left:10px;font-size:14px;font-weight:400;text-decoration:underline;text-underline-offset:3px}
+.dlg-body > .lien{align-self:flex-start}
