@@ -261,6 +261,17 @@ try {
     if (auJour.v || auJour.h || auJour.coupes.length || auJour.petits) e = auJour;
     verifier(`une vie remplie tient sur un écran en ${w} × ${h}, sans texte sous 14 px`, !e.v && !e.h && !e.coupes.length && !e.petits, JSON.stringify(e));
   }
+  // Les blocs des trois rangées tombent sur les mêmes lignes verticales, aux trois tailles.
+  for (const [w, h] of [[1280, 720], [1920, 1080], [1440, 900]]) {
+    await page.setViewportSize({ width: w, height: h });
+    await ouvrirPage('essai-exemple');
+    const ecarts = await page.evaluate(() => {
+      const r = (q) => document.querySelector(q).getBoundingClientRect();
+      const t = [...document.querySelectorAll('#axes > .cell')].map((x) => x.getBoundingClientRect());
+      return [r('.bl').left - t[0].left, r('.bl').right - t[1].right, r('.sv').left - t[2].left, r('.sv').right - t[2].right, r('.rb').left - t[3].left, r('.rb').right - t[4].right, r('.cv').left - t[5].left, r('.cv').right - t[5].right, t[0].width - t[2].width].map((x) => Math.round(x * 10) / 10);
+    });
+    verifier(`les blocs sont alignés sur trois colonnes égales en ${w} × ${h}`, ecarts.every((x) => Math.abs(x) < 1), JSON.stringify(ecarts));
+  }
   verifier('la vie d’exemple : 21 trophées dans six catégories', (await nombres()) === '21/4/4/3/2/2/5', await nombres());
   verifier('le souvenir du jour est l’anniversaire', (await texte('#sv')).includes('Il y a 2 ans aujourd’hui') && (await texte('#sv')).includes('semi-marathon'), await texte('#sv'));
   verifier('les hauts faits disent leur rareté', (await texte('#feats')).includes('Top 16 %') && (await texte('#feats')).includes('Top 4 %') && (await texte('#feats')).includes('Top 17 %'), await texte('#feats'));

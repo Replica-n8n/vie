@@ -306,3 +306,12 @@ h1{font-size:30px}
 @media (max-height:800px){ .bl ul{gap:3px;margin-top:6px} .bl li strong{font-size:17px} #bl-total .num{font-size:68px} #bl-total .n{font-size:16px} #feats-vide{display:none} .cv{grid-template-columns:72px minmax(0,1fr)} }
 @media (max-width:900px){ .page,.page.vide{grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "bl" "sv" "ax" "rb" "cv"} .page.vide{grid-template-areas:"top" "sv" "ax" "rb" "cv"} .bl{grid-template-columns:minmax(0,1fr)} #axes{grid-template-columns:minmax(0,1fr)} }
 .page.vide .sv .t{font-size:clamp(30px,3.4vw,48px)}
+
+/* v10 : une seule grille de trois colonnes pour toute la page. Avant, les rangées 1 et 3
+   étaient en deux tiers / un tiers avec une gouttière, et les tuiles en trois colonnes avec
+   une autre : les bords ne tombaient pas en face. */
+.page{--gouttiere:clamp(16px,2vw,32px);grid-template-columns:repeat(3,minmax(0,1fr));column-gap:var(--gouttiere);grid-template-areas:"top top top" "bl bl sv" "ax ax ax" "rb rb cv"}
+.page.vide{grid-template-areas:"top top top" "sv sv sv" "ax ax ax" "rb rb cv"}
+#axes{column-gap:var(--gouttiere)}
+@media (max-height:800px){ .page{--gouttiere:16px} }
+@media (max-width:900px){ .page,.page.vide{grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "bl" "sv" "ax" "rb" "cv"} .page.vide{grid-template-areas:"top" "sv" "ax" "rb" "cv"} }
