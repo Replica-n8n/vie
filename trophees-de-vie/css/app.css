@@ -319,3 +319,15 @@ h1{font-size:30px}
 /* v12 : une réussite déjà enregistrée se rouvre depuis sa tuile */
 .crayon{margin-left:10px;font-size:14px;font-weight:400;text-decoration:underline;text-underline-offset:3px}
 .dlg-body > .lien{align-self:flex-start}
+
+/* v13 : les jeux de couleurs. Chacun donne son ciel, la teinte de son verre et celle de
+   ses volets. Les contrastes de chaque jeu sont mesurés sur les pixels par l'essai de la page. */
+:root[data-ciel="lagon"]{ --c1:#1350B0; --c2:#1A72C2; --c3:#19B8CC; --c4:#5FE0D2; --bg:#1350B0; --verre:rgba(4,40,84,.7); --verre-opaque:#123F7A; --volet:#0F2F5E; --volet-point:#123A4E; --nuit:#12325F }
+:root[data-ciel="jardin"]{ --c1:#095A50; --c2:#0F7F62; --c3:#6CBE5E; --c4:#E6DC72; --bg:#095A50; --verre:rgba(4,48,44,.74); --verre-opaque:#0E4A40; --volet:#0B3A33; --volet-point:#2C3A16; --nuit:#0E3F36 }
+:root[data-ciel="aurore"]{ --c1:#5B2A9E; --c2:#A03FB6; --c3:#F0609A; --c4:#FFB37A; --bg:#5B2A9E; --verre:rgba(44,16,72,.58); --verre-opaque:#4A1F70; --volet:#371758; --volet-point:#4A1A40; --nuit:#3A1A5C }
+:root[data-ciel="soleil"]{ --c1:#963C08; --c2:#BC600C; --c3:#F2B02A; --c4:#FFE48A; --bg:#963C08; --verre:rgba(104,34,8,.82); --verre-opaque:#7A300C; --volet:#5E2409; --volet-point:#5A3A08; --nuit:#5E2409 }
+.btn{background:color-mix(in srgb,var(--nuit) 72%,transparent)}
+.btn.main{background:#FFFFFF}
+.dlg-foot .btn{background:transparent}
+.dlg-foot .btn.main{background:var(--tete)}
+@media (max-width:900px){ .actions{flex-wrap:wrap} }

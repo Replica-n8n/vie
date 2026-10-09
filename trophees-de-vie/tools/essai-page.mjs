@@ -245,6 +245,19 @@ try {
   verifier('trois trophées dans « Partir » : le badge « Globe-trotter »', (await texte('.cell.axe >> nth=3 >> .badge')) === 'Globe-trotter');
   await page.screenshot({ path: join(CAPTURES, 'ancienne-base.png') });
 
+  // ---------- Les couleurs se choisissent et se gardent ----------
+  await page.waitForFunction(() => !document.querySelector('#toast.on'));
+  await page.click('#btn-ciel');
+  verifier('cinq jeux de couleurs sont proposés', (await page.$$('.dlg .opt')).length === 5 && (await page.getAttribute('.dlg .opt >> nth=0', 'aria-pressed')) === 'true');
+  await page.click('.dlg .opt:has-text("Aurore")');
+  await page.waitForFunction(() => document.documentElement.getAttribute('data-ciel') === 'aurore');
+  await page.screenshot({ path: join(CAPTURES, 'couleurs.png') });
+  await page.click('#dlg-next');
+  await ouvrirPage('essai-ancien');
+  verifier('la couleur choisie est gardée après rechargement', (await page.getAttribute('html', 'data-ciel')) === 'aurore');
+  await ouvrirPage('essai-page');
+  verifier('la couleur appartient à sa base : une autre page garde la mer', (await page.getAttribute('html', 'data-ciel')) === null);
+
   // ---------- Une vie d'exemple : tailles, contrastes, captures ----------
   await page.goto(`${ORIGINE}/icone.svg`);
   await page.evaluate(async () => {
@@ -293,6 +306,8 @@ try {
 
   // Contrastes : on rend le texte transparent, on relève le fond sous chaque texte, ciel le plus clair.
   await page.evaluate(() => document.documentElement.setAttribute('data-meteo', '5'));
+  for (const ciel of ['mer', 'lagon', 'jardin', 'aurore', 'soleil']) {
+  await page.evaluate((c) => { if (c === 'mer') document.documentElement.removeAttribute('data-ciel'); else document.documentElement.setAttribute('data-ciel', c); }, ciel);
   const cibles = ['#today', 'h1', '.sv .k', '.sv .t', '.sv .q', '#bl-total .num', '#bl-total .n', '#stats li', '#feats-vide', '.cat-n', '.nb', '.nomme', '.reste', '.badge', '.ages span', '.leg span', '.lab', '.lien', '.ans span', '.temps', '.bl strong', '.bl li .petit', '#btn-point'];
   const zones = await page.evaluate((sels) => sels.flatMap((sel) => [...document.querySelectorAll(sel)].map((x) => { const r = document.createRange(); r.selectNodeContents(x); const b = r.getBoundingClientRect(); return { sel, x: b.left, y: b.top, w: b.width, h: b.height, c: getComputedStyle(x).color, gros: parseFloat(getComputedStyle(x).fontSize) >= 24 }; })).filter((z) => z.w > 2), cibles);
   const radarTextes = await page.$$eval('#radar text', (ts) => ts.map((t) => { const b = t.getBoundingClientRect(); return { sel: 'radar', x: b.left, y: b.top, w: b.width, h: b.height, c: getComputedStyle(t).fill, gros: false }; }));
@@ -317,7 +332,9 @@ try {
   }, { capture, zones: [...zones, ...radarTextes, ...coupes] });
   const bas = mesures.filter((x) => x.pire < x.seuil).map((x) => `${x.sel} ${x.pire.toFixed(2)}`);
   const plusBas = mesures.reduce((a, b) => (b.pire / b.seuil < a.pire / a.seuil ? b : a));
-  verifier(`les contrastes tiennent sur les pixels, ciel le plus clair (le plus juste : ${plusBas.sel} à ${plusBas.pire.toFixed(2)})`, !bas.length, [...new Set(bas)].join(' ; '));
+  verifier(`les contrastes tiennent sur les pixels en « ${ciel} » (le plus juste : ${plusBas.sel} à ${plusBas.pire.toFixed(2)})`, !bas.length, [...new Set(bas)].join(' ; '));
+  }
+  await page.evaluate(() => document.documentElement.removeAttribute('data-ciel'));
 
   await page.setViewportSize({ width: 400, height: 800 });
   await ouvrirPage('essai-exemple');

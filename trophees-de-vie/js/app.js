@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=12';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=12';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=12';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=12';
+import { ouvrir, demanderPersistance } from './stockage.js?v=13';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=13';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=13';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=13';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -39,12 +39,24 @@ const pluriel = (n, mots) => `${n} ${mots[n > 1 ? 1 : 0]}`;
 const trophees = (n) => pluriel(n, ['trophée', 'trophées']);
 
 // `moments` : ce qui est gardé. `vus` : les mêmes, tels que la page les montre.
-const etat = { base: null, moments: [], vus: [], points: [], naissance: null };
+const etat = { base: null, moments: [], vus: [], points: [], naissance: null, ciel: 'mer' };
+
+// Les couleurs de la page, au choix de chacun. « mer » est le ciel d'origine.
+const CIELS = [['mer', 'Mer et plage'], ['lagon', 'Lagon'], ['jardin', 'Jardin'], ['aurore', 'Aurore'], ['soleil', 'Soleil']];
+function appliquerCiel(id) {
+  const connu = CIELS.some((c) => c[0] === id) ? id : 'mer';
+  if (connu === 'mer') document.documentElement.removeAttribute('data-ciel'); else document.documentElement.setAttribute('data-ciel', connu);
+  // Une copie hors de la base, pour poser la couleur avant même de lire les données.
+  try { localStorage.setItem('trophees-ciel', connu); } catch { /* stockage refusé : tant pis pour la copie */ }
+  return connu;
+}
+try { appliquerCiel(localStorage.getItem('trophees-ciel')); } catch { /* idem */ }
 
 async function charger() {
   etat.moments = await etat.base.tout('moments');
   etat.points = await etat.base.tout('points');
   etat.naissance = await etat.base.reglage('naissance');
+  etat.ciel = appliquerCiel(await etat.base.reglage('ciel', 'mer'));
   etat.vus = lire(etat.moments, CATALOGUE, etat.naissance);
 }
 
@@ -693,6 +705,18 @@ function ouvrirEdition(m, retour = 'parcours') {
   });
 }
 
+// ---------- Couleurs ----------
+
+function ouvrirCouleurs() {
+  ouvrirVolet('add', [{ label: 'Ta page', titre: 'Ses couleurs', dessiner(corps) {
+    // Le choix s'applique et se garde tout de suite : on voit la page changer derrière.
+    choix(corps, CIELS.map((c) => c[1]), CIELS.findIndex((c) => c[0] === etat.ciel), async (i) => {
+      etat.ciel = appliquerCiel(CIELS[i][0]);
+      await etat.base.regler('ciel', etat.ciel);
+    });
+  } }], 'Fermer', async () => fermerVolet());
+}
+
 // ---------- Sauvegarde ----------
 
 function ouvrirSauvegarde() {
@@ -740,6 +764,7 @@ $('btn-add').addEventListener('click', ouvrirAjout);
 $('btn-point').addEventListener('click', ouvrirPoint);
 $('btn-parcours').addEventListener('click', ouvrirParcours);
 $('btn-sauvegarde').addEventListener('click', ouvrirSauvegarde);
+$('btn-ciel').addEventListener('click', ouvrirCouleurs);
 
 heure();
 setInterval(heure, 20000);
