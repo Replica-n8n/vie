@@ -4,7 +4,8 @@ Un tableau de bord personnel de tout ce qu'on a fait dans sa vie. Une page web
 vanilla en modules JS, sans build ni serveur, pensée comme page d'accueil du
 navigateur sur ordinateur : tout se lit sur un écran, sans défiler ni cliquer.
 Les données restent dans IndexedDB. Elle veut que le plus de gens possible l'utilisent une fois finie (dit le 2026-10-08) : ne plus concevoir pour une personne en particulier.
-Ce n'est plus une PWA (décidé le 2026-10-05).
+Elle est redevenue installable le 2026-10-09 (manifeste, service worker, bouton Installer),
+depuis qu'elle a une vraie mise en page téléphone.
 
 ## Ce que la page doit faire
 
@@ -65,7 +66,7 @@ pour l'or, les notes et les titres précisés.
 
 - GitHub Pages garde un fichier dix minutes. `index.html` appelle `app.css?v=N` et
   `app.js?v=N`, et `app.js` importe ses quatre modules avec le même `?v=N` : monter
-  N aux SEPT endroits à chaque livraison, sinon l'ancien et le nouveau se mélangent.
+  N aux SEPT endroits, plus `VERSION` dans `sw.js` (huit en tout), à chaque livraison, sinon l'ancien et le nouveau se mélangent.
 - **Sa vraie page contient des moments écrits par les versions 1 et 2** (champs
   `passage`, `proposition`, niveaux `effort`, `cap`, `montagne`). Ils doivent
   rester lisibles : `definition()` et `medaille()` les traduisent, `ALIAS` reconnaît

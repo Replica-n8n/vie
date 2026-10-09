@@ -371,6 +371,22 @@ try {
   await page.keyboard.press('Escape');
   await page.click('#dlg-x').catch(() => {});
 
+  // Installer, et hors ligne.
+  await ouvrirPage('essai-exemple');
+  verifier('le bouton Installer est visible sur téléphone', await page.isVisible('#btn-installer'));
+  await page.click('#btn-installer');
+  verifier('sans invite du navigateur, Installer explique le chemin', (await texte('.dlg-body')).includes('Ajouter à l’écran d’accueil') && (await texte('.dlg-body')).includes('Sur iPhone'));
+  await page.click('#dlg-next');
+  const manifeste = await page.evaluate(async () => { const m = await (await fetch('manifest.webmanifest')).json(); const tailles = await Promise.all(m.icons.map(async (i) => (await fetch(i.src)).ok)); return m.display === 'standalone' && m.icons.length === 3 && tailles.every(Boolean); });
+  verifier('le manifeste et ses trois icônes répondent', manifeste);
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.waitForFunction(async () => (await caches.keys()).some((k) => k.startsWith('trophees-de-vie:app:')) && navigator.serviceWorker.controller);
+  await contexte.setOffline(true);
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => document.querySelector('#bl-total .num')?.textContent === '21');
+  verifier('hors ligne, la page s’ouvre avec ses données et sa police', (await nombres()).startsWith('21/') && await page.evaluate(() => document.fonts.ready.then(() => document.fonts.check('500 30px "Bricolage Grotesque"'))));
+  await contexte.setOffline(false);
+
   verifier('aucune requête ne sort de la page', !dehors.length, dehors.join(', '));
   verifier('aucune erreur de script', !erreurs.length, erreurs.join(' | '));
   await effacer();

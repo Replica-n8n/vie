@@ -7,14 +7,17 @@
 <meta name="description" content="Tout ce que tu as fait dans ta vie, sur une seule page.">
 <meta name="theme-color" content="#1E4C78">
 <link rel="icon" href="icone.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icone-192.png">
 <link rel="preload" href="polices/bricolage.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/app.css?v=15">
+<link rel="stylesheet" href="css/app.css?v=16">
 </head>
 <body>
 <div class="page">
   <header class="top">
     <div><p class="petit" id="today"></p><h1 id="hello">Bonjour</h1></div>
     <div class="actions">
+      <button class="lien" id="btn-installer" type="button" hidden>Installer</button>
       <button class="lien" id="btn-ciel" type="button">Couleurs</button>
       <button class="lien" id="btn-sauvegarde" type="button">Sauvegarde</button>
       <button class="btn" id="btn-point" type="button">Faire le point</button>
@@ -61,6 +64,6 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="js/app.js?v=15"></script>
+<script type="module" src="js/app.js?v=16"></script>
 </body>
 </html>

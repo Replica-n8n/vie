@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=15';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=15';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=15';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=15';
+import { ouvrir, demanderPersistance } from './stockage.js?v=16';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=16';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=16';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=16';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -727,6 +727,38 @@ function ouvrirCouleurs() {
   } }], 'Fermer', async () => fermerVolet());
 }
 
+// ---------- Installer ----------
+
+// Le bouton est visible tant que la page n'est pas installée. Le navigateur ne propose pas
+// toujours son invite (Chrome choisit son moment, l'iPhone n'en a pas) : sans elle, le
+// bouton explique le chemin par le menu.
+let invite = null;
+const installee = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+$('btn-installer').hidden = installee();
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); invite = e; });
+addEventListener('appinstalled', () => { invite = null; $('btn-installer').hidden = true; });
+$('btn-installer').addEventListener('click', async () => {
+  if (invite) {
+    invite.prompt();
+    await invite.userChoice;
+    invite = null;
+    return;
+  }
+  ouvrirVolet('add', [{ label: 'Ta page', titre: 'L’avoir sous la main', dessiner(corps) {
+    const pas = el('ul', 'pas');
+    for (const [ou, quoi] of [
+      ['Sur Android', 'le menu ⋮ du navigateur, puis « Ajouter à l’écran d’accueil ».'],
+      ['Sur iPhone', 'le bouton Partager, puis « Sur l’écran d’accueil ».'],
+      ['Sur ordinateur', 'l’icône d’installation dans la barre d’adresse, ou fais de cette page ta page d’accueil.'],
+    ]) {
+      const li = el('li');
+      li.append(el('strong', null, ou), ` : ${quoi}`);
+      pas.append(li);
+    }
+    corps.append(pas, el('p', 'aide', 'Une fois installée, la page s’ouvre aussi sans connexion.'));
+  } }], 'Fermer', async () => fermerVolet());
+});
+
 // ---------- Sauvegarde ----------
 
 function ouvrirSauvegarde() {
@@ -798,4 +830,13 @@ try {
 } catch (erreur) {
   console.error(erreur);
   $('sv').append(el('p', 'k', 'Impossible de garder tes données ici'), el('p', 't', 'Ce navigateur refuse le stockage'), el('p', 'q', 'En navigation privée, la page ne peut rien retenir.'));
+}
+
+// La page s'ouvre hors ligne. Un simple rechargement ne redemande pas sw.js : il faut le
+// lui demander, ici et à chaque retour sur la page.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    reg.update();
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update(); });
+  }).catch(() => { /* sans service worker, la page marche en ligne */ });
 }

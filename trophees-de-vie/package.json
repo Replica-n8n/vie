@@ -8,7 +8,8 @@
     "essai-tests": "node tools/essai-tests.mjs",
     "essai-stockage": "node tools/essai-stockage.mjs",
     "essai-page": "node tools/essai-page.mjs",
-    "polices": "node tools/polices.mjs"
+    "polices": "node tools/polices.mjs",
+    "icones": "node tools/icones.mjs"
   },
   "devDependencies": {
     "playwright": "1.63.0"
