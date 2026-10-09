@@ -348,6 +348,29 @@ try {
   await ouvrirPage('essai-exemple');
   verifier('sur un écran étroit la page défile sans déborder en largeur', !(await unEcran()).h);
 
+  // Le téléphone (360 × 732) : l'essentiel tient au-dessus des deux boutons, rien ne déborde.
+  await page.setViewportSize({ width: 360, height: 732 });
+  for (const jour of ['2026-01-03', '2026-03-19', '2026-06-05', '2026-08-22']) {
+    await page.goto(`${ORIGINE}/index.html?base=essai-exemple&jour=${jour}`, { waitUntil: 'networkidle' });
+    await page.evaluate(() => document.fonts.ready);
+    const tel = await page.evaluate(() => ({
+      basRuban: Math.round(document.querySelector('.rb').getBoundingClientRect().bottom), hautBoutons: Math.round(document.querySelector('#btn-add').getBoundingClientRect().top),
+      large: document.documentElement.scrollWidth > innerWidth,
+      petits: [...document.querySelectorAll('.page *')].filter((x) => x.childElementCount === 0 && x.textContent.trim() && parseFloat(getComputedStyle(x).fontSize) < 14 && x.getClientRects().length).length,
+      cibles: [...document.querySelectorAll('.page button')].filter((x) => x.getClientRects().length && x.id !== 'ages' && x.getBoundingClientRect().height < 44).map((x) => x.id || x.className),
+      coupes: [...document.querySelectorAll('#ages span, .nomme, .bl strong')].filter((x) => x.scrollWidth > x.clientWidth + 1).map((x) => x.textContent),
+    }));
+    verifier(`téléphone, souvenir du ${jour} : bilan, souvenir et ruban tiennent au-dessus des boutons`, tel.basRuban <= tel.hautBoutons && !tel.large && !tel.petits && !tel.cibles.length && !tel.coupes.length, JSON.stringify(tel));
+  }
+  await page.screenshot({ path: join(CAPTURES, 'telephone.png') });
+  await page.click('#btn-add');
+  await page.click('#pu-doctorat');
+  const volet = await page.evaluate(() => ({ large: document.documentElement.scrollWidth > innerWidth, dlg: document.querySelector('.dlg').scrollWidth > document.querySelector('.dlg').clientWidth + 1, pied: document.querySelector('.dlg-foot').scrollWidth > document.querySelector('.dlg-foot').clientWidth + 1 }));
+  verifier('téléphone : le formulaire tient dans la largeur', !volet.large && !volet.dlg && !volet.pied, JSON.stringify(volet));
+  await page.screenshot({ path: join(CAPTURES, 'telephone-ajouter.png') });
+  await page.keyboard.press('Escape');
+  await page.click('#dlg-x').catch(() => {});
+
   verifier('aucune requête ne sort de la page', !dehors.length, dehors.join(', '));
   verifier('aucune erreur de script', !erreurs.length, erreurs.join(' | '));
   await effacer();

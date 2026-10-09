@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=14';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=14';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=14';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=14';
+import { ouvrir, demanderPersistance } from './stockage.js?v=15';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=15';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=15';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=15';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -160,6 +160,7 @@ function dessinerRuban(vie) {
   const lb = $('ans');
   rb.textContent = '';
   lb.textContent = '';
+  rb.style.setProperty('--n', Math.max(1, vie.annees.length));
   for (const a of vie.annees) {
     const col = el('div', 'an');
     for (const t of a.trophees) {
@@ -198,6 +199,7 @@ function dessinerAges(vie) {
   }
   b.addEventListener('click', ouvrirNaissance);
   $('ans').after(b);
+  for (const s of b.querySelectorAll('span')) if (s.scrollWidth > s.clientWidth + 1) s.textContent = '';
 }
 
 // Tant que rien n'est épinglé, le bloc se remplit seul avec les trophées les plus rares :
@@ -778,7 +780,13 @@ heure();
 setInterval(heure, 20000);
 // Le nombre de noms par tuile dépend de la hauteur de la fenêtre.
 let noms = nomsParTuile();
-addEventListener('resize', () => { if (nomsParTuile() !== noms && etat.base) { noms = nomsParTuile(); dessinerChiffres(); } });
+let attente;
+addEventListener('resize', () => {
+  if (nomsParTuile() !== noms && etat.base) { noms = nomsParTuile(); dessinerChiffres(); }
+  // Les âges sous le ruban dépendent de la largeur.
+  clearTimeout(attente);
+  attente = setTimeout(() => { if (etat.base) dessinerAges(ruban(etat.vus, Math.max(an() - 200, ...etat.vus.filter((t) => t.annee).map((t) => t.annee)))); }, 150);
+});
 // Au passage de minuit, le souvenir du jour change sans qu'on recharge la page.
 let jourAffiche = jourLocal();
 setInterval(() => { if (jourLocal() !== jourAffiche && !flux) { jourAffiche = jourLocal(); dessiner(); } }, 60000);
