@@ -3,7 +3,7 @@
 Un tableau de bord personnel de tout ce qu'on a fait dans sa vie. Une page web
 vanilla en modules JS, sans build ni serveur, pensée comme page d'accueil du
 navigateur sur ordinateur : tout se lit sur un écran, sans défiler ni cliquer.
-Les données restent dans IndexedDB. Pour elle d'abord, partageable plus tard.
+Les données restent dans IndexedDB. Elle veut que le plus de gens possible l'utilisent une fois finie (dit le 2026-10-08) : ne plus concevoir pour une personne en particulier.
 Ce n'est plus une PWA (décidé le 2026-10-05).
 
 ## Ce que la page doit faire
@@ -12,6 +12,16 @@ Un bilan rétrospectif valorisant : le chemin parcouru, des réussites dont on e
 fière. Pas des questions existentielles. Les cinq « regrets » de Bronnie Ware ont été
 essayés comme structure (version 2) et rejetés : ce sont des choses à ne pas rater,
 pas des accomplissements.
+
+## L'agencement (version 9, issu d'une critique impeccable à 24/40)
+
+Le bilan d'abord : rangée 1, le total et les trois plus beaux trophées (hauts faits
+épinglés, sinon les plus rares), puis le souvenir du jour ; rangée 2, les six catégories
+sur toute la largeur, qui NOMMENT leurs réussites ; rangée 3, le ruban et la carte de vie
+en petit. Ses choix : carte de vie gardée mais petite, catégories vides gardées avec leur
+« + », et **le ciel ne change jamais** (mer et plage, plus de variation selon la météo).
+Sans or, pas de décompte par médaille. Le souvenir du jour est tiré avec une préférence
+pour l'or, les notes et les titres précisés.
 
 ## Principes à ne pas casser
 
@@ -66,6 +76,9 @@ pas des accomplissements.
   meilleur chiffre disponible. À lui redire si elle demande d'où vient un « Top ».
 - La médaille dépend de l'âge pour l'achat du logement : sans année de naissance,
   c'est le chiffre tous âges qui sert.
+- « Tient sur un écran » se teste avec PLUSIEURS souvenirs du jour (`?jour=AAAA-MM-JJ`) :
+  le bandeau change de hauteur selon le trophée tiré, et un seul souvenir essayé a laissé
+  passer un débordement en production (version 8).
 - `?base=nom` ouvre une autre base : c'est ce qui permet aux essais de ne jamais
   toucher à la vraie. Effacer une base depuis la page qui l'a ouverte attend pour
   toujours : partir de `icone.svg`.

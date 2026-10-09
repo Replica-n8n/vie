@@ -23,6 +23,7 @@ const DEFAUTS = [
   ['le bronze est nommé avant l’or', 'const RANG = { or: 0, argent: 1, bronze: 2 };', 'const RANG = { or: 2, argent: 1, bronze: 0 };'],
   ['un badge se gagne à deux trophées', 'export function badges(trophees, categories, nomTout, seuil = 3) {', 'export function badges(trophees, categories, nomTout, seuil = 2) {'],
   ['Touche-à-tout sans toutes les catégories', 'categories.every((c) => combien(c) > 0)', 'categories.some((c) => combien(c) > 0)'],
+  ['le souvenir est tiré sans préférence', "const poids = (c) => 1 + (c.niveau === 'or' ? 2 : 0) + (c.note ? 2 : 0) + (c.aPreciser ? 0 : 1);", 'const poids = () => 1;'],
   ['plus de trois hauts faits', '.sort(parTemps).slice(0, 3)', '.sort(parTemps)'],
   ['hausse et baisse inversées', '(a > b ? hausse : baisse)', '(a < b ? hausse : baisse)'],
   ['les années vides disparaissent du ruban', 'for (let a = debut; a <= fin; a += 1) annees.push(', 'for (let a = debut; a <= fin; a += 1) if (dates.some((t) => t.annee === a)) annees.push('],

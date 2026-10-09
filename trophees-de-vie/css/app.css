@@ -16,10 +16,6 @@
   --c1:#1E4C78; --c2:#2F719A; --c3:#F2A680; --c4:#F8D592;
   color-scheme:dark;
 }
-:root[data-meteo="5"]{ --c1:#205488; --c2:#33789F; --c3:#F7AE86; --c4:#FBDB98 }
-:root[data-meteo="3"]{ --c1:#254A6B; --c2:#3F6F8A; --c3:#B8978A; --c4:#CDBB9A }
-:root[data-meteo="2"]{ --c1:#27425A; --c2:#476A7E; --c3:#7F8088; --c4:#9A978E }
-:root[data-meteo="1"]{ --c1:#1F3144; --c2:#33495A; --c3:#4A5560; --c4:#5E666C }
 
 *{box-sizing:border-box}
 [hidden]{display:none !important}
@@ -268,3 +264,45 @@ button.cell:hover{border-color:rgba(255,255,255,.6)}
 @media (max-height:800px){ .hf{gap:6px} .hf ul{gap:5px} .sv .q{font-size:16px} }
 @media (max-height:800px){ .hf strong{display:inline} .hf .petit{margin-left:8px} .hf li{grid-template-columns:26px minmax(0,1fr)} .hf .m.g{width:20px;height:20px} .p{padding-block:12px} .page{gap:12px 16px;padding-block:14px} }
 @media (max-height:800px){ .rb{gap:4px} .rb-head{margin-block:-10px} .ans{margin-top:0} }
+
+/* v9 : le bilan d'abord. Rangée 1 : le total et les trois plus beaux, puis le souvenir.
+   Rangée 2 : les catégories sur toute la largeur. Rangée 3 : le ruban, et la carte de vie en petit. */
+.page{grid-template-columns:minmax(0,2fr) minmax(0,1fr);grid-template-rows:auto minmax(min-content,1fr) auto auto;grid-template-areas:"top top" "bl sv" "ax ax" "rb cv"}
+.page.vide{grid-template-areas:"top top" "sv sv" "ax ax" "rb cv"}
+.page.vide .bl{display:none}
+h1{font-size:30px}
+.bl{grid-area:bl;display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(20px,3vw,48px);align-items:center}
+#bl-total{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+#bl-total .num{font-size:clamp(84px,8.5vw,124px)}
+#bl-total .n{font-weight:700;font-size:18px}
+#bl-total .leg{padding:0}
+.bl ul{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:10px}
+.bl li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;align-items:center}
+.bl li strong{display:block;font:600 clamp(18px,1.55vw,23px)/1.2 var(--display)}
+.bl .petit{white-space:nowrap}
+#feats-vide{margin-top:8px;font-size:14px}
+.sv .t{font-size:clamp(22px,2.2vw,32px);max-width:none}
+.sv .q{font-size:16px}
+#axes{grid-template-columns:repeat(3,minmax(0,1fr))}
+#axes > .cell:first-child{grid-row:auto}
+.cat-t{flex-wrap:nowrap}
+.cat-n{white-space:nowrap}
+.rb{gap:4px}
+.ruban{min-height:30px}
+.ruban .m{cursor:help}
+/* la bande des âges se touche sur 44 px sans prendre plus de place */
+.ages{position:relative}
+.ages::after{content:"";position:absolute;inset:-10px 0 -11px}
+.cv{grid-area:cv;display:grid;grid-template-columns:92px minmax(0,1fr);gap:16px;align-items:center}
+.cv .radar{max-height:none}
+.cv .radar text{display:none}
+.temps{font-size:clamp(22px,2vw,28px)}
+#stats{list-style:none;margin:6px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1px 12px;font-size:14px;color:var(--muted)}
+#stats li{white-space:nowrap}
+#stats b{color:var(--ink)}
+#dlg-msg{margin:0;padding:0 22px;color:var(--m-or);font-weight:700}
+#dlg-msg:empty{display:none}
+.refus{border-color:var(--m-or) !important}
+@media (max-height:800px){ .bl ul{gap:3px;margin-top:6px} .bl li strong{font-size:17px} #bl-total .num{font-size:68px} #bl-total .n{font-size:16px} #feats-vide{display:none} .cv{grid-template-columns:72px minmax(0,1fr)} }
+@media (max-width:900px){ .page,.page.vide{grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "bl" "sv" "ax" "rb" "cv"} .page.vide{grid-template-areas:"top" "sv" "ax" "rb" "cv"} .bl{grid-template-columns:minmax(0,1fr)} #axes{grid-template-columns:minmax(0,1fr)} }
+.page.vide .sv .t{font-size:clamp(30px,3.4vw,48px)}

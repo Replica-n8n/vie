@@ -194,7 +194,11 @@ export function souvenirDuJour(trophees, aujourdhui, tirage = tirageDuJour(aujou
   const an = Number(aujourdhui.slice(0, 4));
   const anniversaires = candidats.filter((t) => t.date && t.date.slice(5) === aujourdhui.slice(5) && t.date < aujourdhui);
   if (anniversaires.length) return { trophee: anniversaires[0], ans: an - Number(anniversaires[0].date.slice(0, 4)), anniversaire: true };
-  const t = candidats[Math.min(candidats.length - 1, Math.floor(tirage * candidats.length))];
+  // Le tirage penche vers l'or, vers ce qui porte une note et vers ce qui a été précisé :
+  // la meilleure place de la page ne doit pas tomber trop souvent sur « Premier emploi ».
+  const poids = (c) => 1 + (c.niveau === 'or' ? 2 : 0) + (c.note ? 2 : 0) + (c.aPreciser ? 0 : 1);
+  let reste = Math.min(tirage, 0.999999) * candidats.reduce((s, c) => s + poids(c), 0);
+  const t = candidats.find((c) => (reste -= poids(c)) < 0) ?? candidats.at(-1);
   return { trophee: t, ans: t.annee ? an - t.annee : null, anniversaire: false };
 }
 

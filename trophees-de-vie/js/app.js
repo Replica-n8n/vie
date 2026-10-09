@@ -4,16 +4,18 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=8';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=8';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=8';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=8';
+import { ouvrir, demanderPersistance } from './stockage.js?v=9';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=9';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=9';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=9';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
 const deux = (n) => String(n).padStart(2, '0');
 const jourLocal = (d = new Date()) => `${d.getFullYear()}-${deux(d.getMonth() + 1)}-${deux(d.getDate())}`;
 const an = () => new Date().getFullYear();
+// ?jour=AAAA-MM-JJ n'existe que pour les essais : il fait varier le souvenir du jour.
+const JOUR = new URLSearchParams(location.search).get('jour');
 
 function el(tag, cls, txt) {
   const e = document.createElement(tag);
@@ -64,7 +66,7 @@ function dessinerSouvenir() {
     sv.append(b);
     return;
   }
-  const s = souvenirDuJour(etat.vus, jourLocal());
+  const s = souvenirDuJour(etat.vus, JOUR ?? jourLocal());
   if (!s) {
     sv.append(el('p', 'k', 'Ta vie'), el('p', 't', trophees(etat.vus.length)));
     return;
@@ -84,28 +86,37 @@ function dessinerSouvenir() {
   }
 }
 
+// Le nombre de réussites nommées par tuile suit la hauteur de la fenêtre : la page doit
+// rester sur un écran.
+const nomsParTuile = () => (innerHeight >= 1000 ? 4 : innerHeight >= 800 ? 3 : 2);
+
 function dessinerChiffres() {
-  const ax = $('axes');
-  ax.textContent = '';
   const c = comptes(etat.vus);
   const gagnes = badges(etat.vus, CATEGORIES, BADGE_TOUT);
-  const total = el('div', 'cell');
+  // Sans aucun trophée, le bilan n'a rien à dire : il s'efface devant l'invitation.
+  document.querySelector('.page').classList.toggle('vide', !c.total);
+  const total = $('bl-total');
+  total.textContent = '';
   total.append(el('span', 'num', String(c.total)), el('span', 'n', c.total > 1 ? 'trophées' : 'trophée'));
-  const leg = el('span', 'leg');
-  for (const n of [...NIVEAUX].reverse()) {
-    if (!c[n.id]) continue; // une médaille à zéro n'a rien à dire
-    const i = el('span');
-    i.append(coupe(n.id), `${c[n.id]} en ${n.nom.toLowerCase()}`);
-    leg.append(i);
+  // Le décompte par médaille n'apparaît qu'avec de l'or : « 6 en bronze » dirait surtout
+  // que tout est courant.
+  if (c.or) {
+    const leg = el('span', 'leg');
+    for (const n of [...NIVEAUX].reverse()) {
+      if (!c[n.id]) continue;
+      const i = el('span');
+      i.append(coupe(n.id), `${c[n.id]} en ${n.nom.toLowerCase()}`);
+      leg.append(i);
+    }
+    total.append(leg);
   }
-  total.append(leg);
   if (gagnes.some((g) => g.id === 'tout')) total.append(el('span', 'badge', BADGE_TOUT));
-  ax.append(total);
+
   // Chaque catégorie NOMME ses réussites, les plus rares d'abord : un bilan se lit, il ne
-  // se compte pas (mesuré : la page ne nommait qu'une réussite sur toute une vie). La tuile
-  // reste un bouton qui ouvre ses réussites. Vide, elle montre un « + », pas un zéro.
-  // Sur un écran bas, deux noms par tuile : la page doit rester sur un écran.
-  const montres = innerHeight < 800 ? 2 : 3;
+  // se compte pas. La tuile est un bouton qui ouvre ses réussites ; vide, elle montre un « + ».
+  const ax = $('axes');
+  ax.textContent = '';
+  const montres = nomsParTuile();
   for (const cat of parCategorie(etat.vus, CATEGORIES)) {
     const d = bouton('cell axe cat');
     const n = cat.trophees.length;
@@ -123,7 +134,8 @@ function dessinerChiffres() {
     }
     d.append(tete, liste);
     if (n > montres) d.append(el('span', 'reste', `et ${n - montres} autre${n - montres > 1 ? 's' : ''}`));
-    d.setAttribute('aria-label', n ? `${cat.nom} : ${trophees(n)}${badge ? `, badge ${badge.nom}` : ''}. Ajouter` : `${cat.nom} : ajouter`);
+    // Le lecteur d'écran entend les réussites, pas seulement leur nombre.
+    d.setAttribute('aria-label', n ? `${cat.nom}, ${trophees(n)} : ${cat.trophees.map((t) => t.titre).join(', ')}${badge ? `. Badge ${badge.nom}` : ''}. Ajouter` : `${cat.nom} : ajouter`);
     d.addEventListener('click', () => ouvrirCategorie(cat));
     ax.append(d);
   }
@@ -136,7 +148,7 @@ function dessinerRuban(vie) {
   lb.textContent = '';
   for (const a of vie.annees) {
     const col = el('div', 'an');
-    for (const t of a.trophees) col.append(coupe(t.niveau));
+    for (const t of a.trophees) { const c = coupe(t.niveau); c.title = `${t.titre} · ${a.annee}`; col.append(c); }
     rb.append(col);
   }
   if (vie.debut == null) { lb.append(el('span', null, String(an()))); return; }
@@ -175,7 +187,7 @@ function dessinerHautsFaits() {
   f.textContent = '';
   const epingles = hautsFaits(etat.vus);
   const montres = epingles.length ? epingles : plusRares(etat.vus);
-  $('hf-t').textContent = epingles.length ? 'Hauts faits' : montres.some((t) => t.niveau === 'or') ? 'Tes plus rares' : montres.length ? 'Tes derniers trophées' : 'Hauts faits';
+  $('hf-t').textContent = epingles.length ? 'Hauts faits' : montres.some((t) => t.niveau === 'or') ? 'Tes plus rares' : 'Tes derniers trophées';
   for (const t of montres) {
     const li = el('li');
     const d = el('div');
@@ -183,7 +195,8 @@ function dessinerHautsFaits() {
     li.append(coupe(t.niveau, true), d);
     f.append(li);
   }
-  $('feats-vide').hidden = montres.length > 0;
+  // Rempli seul, le bloc dit comment choisir les siens.
+  $('feats-vide').hidden = epingles.length > 0 || !montres.length;
 }
 
 function radar(svg, maintenant, avant) {
@@ -217,19 +230,28 @@ function radar(svg, maintenant, avant) {
 }
 const valeurs = (point) => (point ? DOMAINES.map((d) => point.roue[d.id] ?? 5) : null);
 
+// La carte de vie, en petit : la forme, le temps qu'il fait, et les huit notes. Le ciel de
+// la page ne change pas avec elle : il reste celui de la mer et de la plage.
 function dessinerMoment() {
-  const actuel = dernierPoint(etat.points, jourLocal().slice(0, 7));
+  const mois = jourLocal().slice(0, 7);
+  const actuel = dernierPoint(etat.points, mois);
   const avant = pointDavant(etat.points, actuel);
   radar($('radar'), valeurs(actuel), valeurs(avant));
-  if (!actuel) {
-    $('temps').textContent = 'Pas encore de point';
-    $('synth').textContent = '« Faire le point » prend deux minutes.';
-    document.documentElement.removeAttribute('data-meteo');
-    return;
-  }
+  const stats = $('stats');
+  const bloc = document.querySelector('.cv');
+  stats.textContent = '';
+  bloc.removeAttribute('title');
+  $('cv-t').textContent = 'En ce moment';
+  if (!actuel) { $('temps').textContent = 'Pas encore de point'; return; }
+  // Un point ancien se présente avec son mois, pas comme « en ce moment ».
+  if (actuel.mois !== mois) $('cv-t').textContent = `Ton point de ${MOIS[Number(actuel.mois.slice(5, 7)) - 1]}`;
   $('temps').textContent = METEOS[actuel.meteo - 1];
-  $('synth').textContent = phraseRoue(actuel, avant, DOMAINES);
-  document.documentElement.setAttribute('data-meteo', actuel.meteo);
+  bloc.title = phraseRoue(actuel, avant, DOMAINES);
+  for (const d of DOMAINES) {
+    const li = el('li');
+    li.append(`${d.nom} `, el('b', null, String(actuel.roue[d.id] ?? 5)));
+    stats.append(li);
+  }
 }
 
 function dessiner() {
@@ -286,6 +308,7 @@ function montrerEtape() {
   $('dlg-t').textContent = e.titre;
   const corps = $('dlg-body');
   corps.textContent = '';
+  $('dlg-msg').textContent = '';
   e.dessiner(corps);
   corps.scrollTop = 0;
   $('dlg-back').hidden = flux.i === 0;
@@ -300,7 +323,7 @@ $('dlg-next').addEventListener('click', async () => {
 });
 $('dlg-back').addEventListener('click', () => { flux.i -= 1; montrerEtape(); });
 $('dlg-x').addEventListener('click', fermerVolet);
-$('scrim').addEventListener('click', (e) => { if (e.target === e.currentTarget) fermerVolet(); });
+$('scrim').addEventListener('click', (e) => { if (e.target === e.currentTarget && !$('dlg-body').querySelector('input, .puce')) fermerVolet(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && flux) fermerVolet(); });
 
 // ---------- Les briques des formulaires ----------
@@ -311,7 +334,13 @@ function champAnnee(id, valeur, libelle, regler, invite = 'Année') {
   const a = el('input', 'field an-in');
   a.type = 'number'; a.inputMode = 'numeric'; a.id = id; a.placeholder = invite; a.value = valeur ?? '';
   a.setAttribute('aria-label', libelle);
-  a.addEventListener('input', () => regler(a.value));
+  a.addEventListener('input', () => {
+    regler(a.value);
+    const refus = a.value !== '' && anneeValide(a.value) == null;
+    a.classList.toggle('refus', refus);
+    a.setAttribute('aria-invalid', String(refus));
+    $('dlg-msg').textContent = document.querySelector('#dlg-body .refus') ? `Une année hors de 1900 à ${an()} ne sera pas gardée.` : '';
+  });
   return a;
 }
 
@@ -680,8 +709,8 @@ $('btn-sauvegarde').addEventListener('click', ouvrirSauvegarde);
 heure();
 setInterval(heure, 20000);
 // Le nombre de noms par tuile dépend de la hauteur de la fenêtre.
-let bas = innerHeight < 800;
-addEventListener('resize', () => { if ((innerHeight < 800) !== bas && etat.base) { bas = innerHeight < 800; dessinerChiffres(); } });
+let noms = nomsParTuile();
+addEventListener('resize', () => { if (nomsParTuile() !== noms && etat.base) { noms = nomsParTuile(); dessinerChiffres(); } });
 // Au passage de minuit, le souvenir du jour change sans qu'on recharge la page.
 let jourAffiche = jourLocal();
 setInterval(() => { if (jourLocal() !== jourAffiche && !flux) { jourAffiche = jourLocal(); dessiner(); } }, 60000);

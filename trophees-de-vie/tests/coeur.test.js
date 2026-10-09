@@ -251,6 +251,15 @@ test('sans anniversaire, un trophée au hasard, le même toute la journée, avec
   assert.equal(a.ans, 2026 - a.trophee.annee);
 });
 
+test('le tirage du souvenir penche vers l’or, la note et ce qui est précisé', () => {
+  const banal = { id: 'a', titre: 'Premier emploi', niveau: 'bronze', aPreciser: true, annee: 2010 };
+  const beau = { id: 'b', titre: 'Mon marathon', niveau: 'or', note: 'Sous la pluie.', aPreciser: false, annee: 2020 };
+  // à poids égaux, un tirage de 0,2 tomberait sur le premier ; ici le second pèse six fois plus
+  assert.equal(souvenirDuJour([banal, beau], '2026-06-01', 0.2).trophee.id, 'b');
+  assert.equal(souvenirDuJour([banal, beau], '2026-06-01', 0.1).trophee.id, 'a', 'le banal reste possible');
+  assert.equal(souvenirDuJour([banal, beau], '2026-06-01', 1).trophee.id, 'b', 'un tirage à 1 ne sort pas de la liste');
+});
+
 test('un trophée marqué « pas de rappel » ne ressort jamais', () => {
   for (let i = 0; i <= 50; i += 1) assert.notEqual(souvenirDuJour(VUS, '2026-01-01', i / 50).trophee.rappel, false);
 });

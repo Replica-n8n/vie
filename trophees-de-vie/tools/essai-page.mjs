@@ -43,7 +43,7 @@ const ouvrirPage = async (base) => { await page.goto(`${ORIGINE}/index.html?base
 const effacer = async () => { await page.goto(`${ORIGINE}/icone.svg`); await page.evaluate((ns) => Promise.all(ns.map((n) => new Promise((ok) => { const q = indexedDB.deleteDatabase(n); q.onsuccess = q.onerror = q.onblocked = () => ok(); }))), BASES); };
 // Le volet se ferme avant que la page soit redessinée : on attend l'annonce, qui vient en dernier.
 const annonce = (texte) => page.waitForFunction((t) => document.querySelector('#toast.on')?.textContent.includes(t), texte);
-const nombres = () => page.$$eval('.cell .num, .cell .nb', (xs) => xs.map((x) => x.textContent).join('/'));
+const nombres = () => page.$$eval('#bl-total .num, .cell .nb', (xs) => xs.map((x) => x.textContent).join('/'));
 const texte = (sel) => page.textContent(sel).then((t) => t.replace(/\s+/g, ' ').trim());
 const unEcran = () => page.evaluate(() => ({
   v: document.documentElement.scrollHeight > innerHeight, h: document.documentElement.scrollWidth > innerWidth,
@@ -56,7 +56,7 @@ try {
   await effacer();
   await ouvrirPage('essai-page');
   verifier('la page vide invite à commencer', (await texte('#sv')).includes('Tout ce que tu as déjà fait'));
-  verifier('la page vide invite sur chaque catégorie au lieu d’afficher zéro', (await nombres()) === '0/+/+/+/+/+/+', await nombres());
+  verifier('la page vide invite sur chaque catégorie au lieu d’afficher zéro', (await nombres()) === '0/+/+/+/+/+/+' && await page.isHidden('.bl'), await nombres());
   let e = await unEcran();
   verifier('la page vide tient sur un écran', !e.v && !e.h && !e.coupes.length, JSON.stringify(e));
   await page.screenshot({ path: join(CAPTURES, 'vide.png') });
@@ -92,12 +92,12 @@ try {
   verifier('« Voir ma page » referme', await page.isHidden('.dlg'));
   verifier('six trophées ajoutés : le total et les catégories suivent', (await nombres()) === '6/1/1/1/1/1/1', await nombres());
   verifier('la légende compte les médailles : la rareté décide, sinon le choix', (await texte('.leg')).replace(/ /g, '') === '4enor2enbronze', await texte('.leg'));
-  verifier('acheté à 29 ans : en or, grâce à l’année de naissance', (await page.$$('.cell:nth-child(4) .m.or')).length === 1);
+  verifier('acheté à 29 ans : en or, grâce à l’année de naissance', (await page.$$('#axes .cell:nth-child(3) .m.or')).length === 1);
   verifier('le ruban montre les âges : adolescence, vingtaine, trentaine', (await page.$$eval('#ages span', (xs) => xs.map((x) => x.textContent).join('|'))) === 'l’adolescence|la vingtaine', await page.$$eval('#ages span', (xs) => xs.map((x) => x.textContent).join('|')));
   verifier('une année impossible est ignorée, et le ruban s’arrête au dernier trophée (2008 à 2021)', (await page.$$('#ruban .an')).length === 14, String((await page.$$('#ruban .an')).length));
   verifier('chaque tuile nomme ses réussites', (await texte('.cell.axe >> nth=0')).includes('Un master') && (await texte('.cell.axe >> nth=2')).includes('Acheter mon logement') && (await texte('.cell.axe >> nth=4')).includes('La naissance de Lou'), await texte('#axes'));
-  verifier('un trophée dans chaque catégorie : le badge Touche-à-tout', (await texte('.cell >> nth=0')).includes('Touche-à-tout'));
-  verifier('sans rien d’épinglé, les plus rares tiennent lieu de hauts faits', (await texte('#hf-t')) === 'Tes plus rares' && (await page.$$('#feats li')).length === 3 && (await texte('#feats li >> nth=0')).includes('Vivre dans un autre pays'), await texte('.hf'));
+  verifier('un trophée dans chaque catégorie : le badge Touche-à-tout', (await texte('#bl-total')).includes('Touche-à-tout'));
+  verifier('sans rien d’épinglé, les plus rares tiennent lieu de hauts faits', (await texte('#hf-t')) === 'Tes plus rares' && (await page.$$('#feats li')).length === 3 && (await texte('#feats li >> nth=0')).includes('Vivre dans un autre pays'), await texte('.bl'));
 
   // ---------- Persistance ----------
   await ouvrirPage('essai-page');
@@ -117,7 +117,7 @@ try {
   await page.screenshot({ path: join(CAPTURES, 'categorie.png') });
   await page.click('#dlg-next'); await annonce('2 trophées ajoutés');
   verifier('une réussite écrite à la main entre dans la catégorie de la tuile', (await nombres()) === '8/3/1/1/1/1/1', await nombres());
-  verifier('un diplôme du supérieur est en argent', (await page.$$('.cell:nth-child(2) .m.argent')).length === 1);
+  verifier('un diplôme du supérieur est en argent', (await page.$$('#axes .cell:nth-child(1) .m.argent')).length === 1);
   verifier('trois trophées dans « Apprendre » : le badge « Tête bien faite »', (await texte('.cell.axe >> nth=0 >> .badge')) === 'Tête bien faite');
 
   // ---------- Faire le point ----------
@@ -129,15 +129,15 @@ try {
   await page.click('#dlg-next'); await page.click('.opt:has-text("Grand soleil")');
   await page.click('#dlg-next'); await page.click('.opt:has-text("Oui")');
   await page.click('#dlg-next'); await annonce('C’est noté');
-  verifier('le point s’affiche : météo, carte, phrase', (await texte('#temps')) === 'Grand soleil' && (await texte('#radar')).includes('Santé 9') && (await texte('#synth')) === 'Premier point posé.', `${await texte('#temps')} | ${await texte('#synth')}`);
-  verifier('le ciel suit la météo', (await page.getAttribute('html', 'data-meteo')) === '5');
+  verifier('le point s’affiche : météo, carte, phrase', (await texte('#temps')) === 'Grand soleil' && (await texte('#stats')).includes('Santé 9') && (await page.getAttribute('.cv', 'title')) === 'Premier point posé.', `${await texte('#temps')} | ${await page.getAttribute('.cv', 'title')}`);
+  verifier('le ciel ne change pas avec la météo', (await page.getAttribute('html', 'data-meteo')) === null);
   await page.waitForFunction(() => !document.querySelector('#toast.on'));
   await page.click('#btn-point');
   verifier('refaire le point repart du dernier', (await page.inputValue('#sl-sante')) === '9');
   await page.click('#dlg-next'); await page.click('.opt:has-text("Orageux")'); await page.click('#dlg-next'); await page.click('#dlg-next');
   await annonce('C’est noté');
   const nbPoints = await page.evaluate(async () => { const { ouvrir } = await import('/js/stockage.js'); const b = await ouvrir('essai-page'); const n = (await b.tout('points')).length; b.fermer(); return n; });
-  verifier('deux points le même mois n’en font qu’un', nbPoints === 1 && (await texte('#temps')) === 'Orageux' && (await page.getAttribute('html', 'data-meteo')) === '1', `${nbPoints} point(s)`);
+  verifier('deux points le même mois n’en font qu’un', nbPoints === 1 && (await texte('#temps')) === 'Orageux', `${nbPoints} point(s)`);
 
   // ---------- Tout voir ----------
   await page.click('#btn-parcours');
@@ -184,7 +184,7 @@ try {
   verifier('un fichier illisible est refusé avec une phrase', (await texte('.alerte')) === 'Ce fichier n’est pas lisible.', await texte('.alerte'));
   await page.setInputFiles('#fichier', fichier);
   await annonce('Sauvegarde reprise');
-  verifier('la sauvegarde se reprend ailleurs, à l’identique', (await nombres()) === '8/2/1/1/1/1/2' && (await texte('#temps')) === 'Orageux' && (await page.$$('#feats li')).length === 3 && (await page.$$('.cell:nth-child(4) .m.or')).length === 1, await nombres());
+  verifier('la sauvegarde se reprend ailleurs, à l’identique', (await nombres()) === '8/2/1/1/1/1/2' && (await texte('#temps')) === 'Orageux' && (await page.$$('#feats li')).length === 3 && (await page.$$('#axes .cell:nth-child(3) .m.or')).length === 1, await nombres());
 
   // ---------- Une base écrite par les versions 1 et 2 ----------
   await page.goto(`${ORIGINE}/icone.svg`);
@@ -205,6 +205,11 @@ try {
   await page.fill('#naissance', '1990'); await page.click('#dlg-next'); await annonce('C’est noté');
   verifier('l’année de naissance se donne depuis le ruban, et les âges apparaissent', (await page.$$eval('#ages span', (xs) => xs.map((x) => x.textContent).filter(Boolean).join('|'))) === 'la vingtaine|la trentaine' && (await page.$$('#ages span')).length === 3, await texte('#ages'));
   await page.waitForFunction(() => !document.querySelector('#toast.on'));
+  // Le souvenir est tiré au sort selon le jour : on cherche un jour où il tombe sur un titre général.
+  for (let j = 1; j <= 28; j += 1) {
+    await page.goto(`${ORIGINE}/index.html?base=essai-ancien&jour=2026-03-${String(j).padStart(2, '0')}`, { waitUntil: 'networkidle' });
+    if (await page.$('#preciser')) break;
+  }
   verifier('le bandeau propose de préciser un trophée au titre général', (await texte('#preciser')) === 'Préciser lequel');
   const general = await texte('#sv .t');
   await page.click('#preciser');
@@ -242,19 +247,29 @@ try {
   });
   for (const [w, h] of [[1280, 720], [1920, 1080], [1440, 900]]) {
     await page.setViewportSize({ width: w, height: h });
+    // Le souvenir change de hauteur selon le jour (note, lien « Préciser lequel ») : la page
+    // doit tenir pour chacun. Un seul souvenir essayé avait laissé passer un débordement.
+    e = { v: false, h: false, coupes: [], petits: 0 };
+    for (const jour of ['2026-01-03', '2026-02-11', '2026-03-19', '2026-04-27', '2026-06-05', '2026-07-14', '2026-08-22', '2026-11-30']) {
+      await page.goto(`${ORIGINE}/index.html?base=essai-exemple&jour=${jour}`, { waitUntil: 'networkidle' });
+      await page.evaluate(() => document.fonts.ready);
+      const x = await unEcran();
+      if (x.v || x.h || x.coupes.length || x.petits) e = { ...x, jour, souvenir: await texte('#sv') };
+    }
     await ouvrirPage('essai-exemple');
-    e = await unEcran();
+    const auJour = await unEcran();
+    if (auJour.v || auJour.h || auJour.coupes.length || auJour.petits) e = auJour;
     verifier(`une vie remplie tient sur un écran en ${w} × ${h}, sans texte sous 14 px`, !e.v && !e.h && !e.coupes.length && !e.petits, JSON.stringify(e));
   }
   verifier('la vie d’exemple : 21 trophées dans six catégories', (await nombres()) === '21/4/4/3/2/2/5', await nombres());
   verifier('le souvenir du jour est l’anniversaire', (await texte('#sv')).includes('Il y a 2 ans aujourd’hui') && (await texte('#sv')).includes('semi-marathon'), await texte('#sv'));
   verifier('les hauts faits disent leur rareté', (await texte('#feats')).includes('Top 16 %') && (await texte('#feats')).includes('Top 4 %') && (await texte('#feats')).includes('Top 17 %'), await texte('#feats'));
-  verifier('la carte se compare au point d’il y a trois mois', (await texte('#synth')).startsWith('Amour, Santé, Proches et Cadre de vie montent depuis'), await texte('#synth'));
+  verifier('la carte se compare au point d’il y a trois mois', (await page.getAttribute('.cv', 'title')).startsWith('Amour, Santé, Proches et Cadre de vie montent depuis'), await page.getAttribute('.cv', 'title'));
   await page.screenshot({ path: join(CAPTURES, 'page.png') });
 
   // Contrastes : on rend le texte transparent, on relève le fond sous chaque texte, ciel le plus clair.
   await page.evaluate(() => document.documentElement.setAttribute('data-meteo', '5'));
-  const cibles = ['#today', 'h1', '.sv .k', '.sv .t', '.sv .q', '.cell .num', '.cell .n', '.cat-n', '.nb', '.nomme', '.reste', '.badge', '.ages span', '.leg span', '.lab', '.lien', '.ans span', '.temps', '#synth', '.hf strong', '.hf .petit', '#btn-point'];
+  const cibles = ['#today', 'h1', '.sv .k', '.sv .t', '.sv .q', '#bl-total .num', '#bl-total .n', '#stats li', '#feats-vide', '.cat-n', '.nb', '.nomme', '.reste', '.badge', '.ages span', '.leg span', '.lab', '.lien', '.ans span', '.temps', '.bl strong', '.bl li .petit', '#btn-point'];
   const zones = await page.evaluate((sels) => sels.flatMap((sel) => [...document.querySelectorAll(sel)].map((x) => { const r = document.createRange(); r.selectNodeContents(x); const b = r.getBoundingClientRect(); return { sel, x: b.left, y: b.top, w: b.width, h: b.height, c: getComputedStyle(x).color, gros: parseFloat(getComputedStyle(x).fontSize) >= 24 }; })).filter((z) => z.w > 2), cibles);
   const radarTextes = await page.$$eval('#radar text', (ts) => ts.map((t) => { const b = t.getBoundingClientRect(); return { sel: 'radar', x: b.left, y: b.top, w: b.width, h: b.height, c: getComputedStyle(t).fill, gros: false }; }));
   // Les coupes aussi doivent se détacher du fond : 3:1, comme tout dessin qui porte un sens.
