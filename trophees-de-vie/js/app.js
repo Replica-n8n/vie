@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=16';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=16';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=16';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=16';
+import { ouvrir, demanderPersistance } from './stockage.js?v=17';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=17';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=17';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=17';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -136,7 +136,9 @@ function dessinerChiffres() {
     const badge = gagnes.find((g) => g.id === cat.id);
     const picto = el('span', `pi pi-${cat.id}`);
     picto.setAttribute('aria-hidden', 'true');
-    tete.append(picto, el('span', 'cat-n', cat.nom), el('span', 'nb', n ? String(n) : '+'));
+    const rond = el('span', 'rond');
+    rond.append(picto);
+    tete.append(rond, el('span', 'cat-n', cat.nom), el('span', 'nb', n ? String(n) : '+'));
     if (badge) tete.append(el('span', 'badge', badge.nom));
     const liste = el('span', 'cat-l');
     for (const t of plusRares(cat.trophees, montres)) {

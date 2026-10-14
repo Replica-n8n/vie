@@ -1,6 +1,6 @@
 // Service worker de Trophées de vie : la page s'ouvre hors ligne une fois installée.
 // VERSION suit le ?v= d'index.html et de js/app.js : les monter ensemble.
-const VERSION = 16;
+const VERSION = 17;
 
 const CACHE = `trophees-de-vie:app:v${VERSION}`;
 const PREFIXE = 'trophees-de-vie:app:';

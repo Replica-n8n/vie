@@ -298,7 +298,7 @@ try {
     });
     verifier(`les blocs sont alignés sur trois colonnes égales en ${w} × ${h}`, ecarts.every((x) => Math.abs(x) < 1), JSON.stringify(ecarts));
   }
-  verifier('chaque tuile porte son pictogramme, et le ruban montre un jeton par trophée daté', (await page.$$('#axes .cat-t .pi')).length === 6 && (await page.$$('#ruban .jeton')).length === 21 && (await page.$$('#ruban .jeton .pi-partir')).length === 2, String((await page.$$('#ruban .jeton')).length));
+  verifier('chaque tuile porte son pictogramme, et le ruban montre un jeton par trophée daté', (await page.$$('#axes .cat-t .rond .pi')).length === 6 && (await page.$$('#ruban .jeton')).length === 21 && (await page.$$('#ruban .jeton .pi-partir')).length === 2, String((await page.$$('#ruban .jeton')).length));
   verifier('la vie d’exemple : 21 trophées dans six catégories', (await nombres()) === '21/4/4/3/2/2/5', await nombres());
   verifier('le souvenir du jour est l’anniversaire', (await texte('#sv')).includes('Il y a 2 ans aujourd’hui') && (await texte('#sv')).includes('semi-marathon'), await texte('#sv'));
   verifier('les hauts faits disent leur rareté', (await texte('#feats')).includes('Top 16 %') && (await texte('#feats')).includes('Top 4 %') && (await texte('#feats')).includes('Top 17 %'), await texte('#feats'));
