@@ -108,6 +108,30 @@ try {
   await page.keyboard.press('Escape');
   verifier('Échap ferme le volet', await page.isHidden('.dlg'));
 
+  // ---------- Le retour (geste d'Android, bouton Précédent) ----------
+  const ici = page.url();
+  await page.click('#btn-add');
+  await page.goBack(); await page.waitForTimeout(200);
+  verifier('le retour ferme le volet sans quitter la page', await page.isHidden('.dlg') && page.url() === ici, page.url());
+  await page.click('#btn-add'); await page.click('#dlg-next');
+  await page.goBack(); await page.waitForTimeout(200);
+  verifier('le retour pendant un formulaire revient à l’étape d’avant', await page.isVisible('.dlg') && (await texte('#dlg-step')).includes('1 sur 2'), await texte('#dlg-step'));
+  await page.goBack(); await page.waitForTimeout(200);
+  verifier('un deuxième retour ferme le volet', await page.isHidden('.dlg') && page.url() === ici, page.url());
+  await page.click('#btn-add'); await page.click('#dlg-x'); await page.waitForTimeout(200);
+  verifier('fermé par la croix, le volet ne laisse rien dans l’historique', await page.evaluate(() => history.state?.volet !== true) && page.url() === ici);
+  // Au téléphone, la page est plus haute que l'écran : elle ne doit pas défiler sous le volet.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.click('#btn-add');
+  await page.mouse.move(195, 30); await page.mouse.wheel(0, 900); await page.waitForTimeout(300);
+  const sous = await page.evaluate(() => [scrollY, document.documentElement.scrollHeight > innerHeight]);
+  verifier('la page ne défile pas sous le volet ouvert', sous[1] && sous[0] === 0, JSON.stringify(sous));
+  await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+  await page.mouse.wheel(0, 900); await page.waitForTimeout(300);
+  verifier('volet fermé, la page défile de nouveau', await page.evaluate(() => scrollY > 0));
+  await page.setViewportSize({ width: 1440, height: 900 });
+
   // ---------- Une tuile ouvre sa catégorie ----------
   await page.click('.cell.axe >> nth=0');
   verifier('la tuile « Apprendre » ouvre ses réussites', (await texte('#dlg-t')) === 'Apprendre' && (await page.$$('.dlg .puce')).length === 6);

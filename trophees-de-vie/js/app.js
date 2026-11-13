@@ -4,10 +4,10 @@
 
 // Le numéro suit celui d'index.html : Pages garde un fichier dix minutes, et sans lui
 // un nouvel app.js pourrait charger une ancienne configuration.
-import { ouvrir, demanderPersistance } from './stockage.js?v=17';
-import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=17';
-import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=17';
-import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=17';
+import { ouvrir, demanderPersistance } from './stockage.js?v=18';
+import { NIVEAUX, CATEGORIES, REUSSITES, CATALOGUE, BADGE_TOUT } from './config/vie.js?v=18';
+import { DOMAINES, METEOS, ELANS, MOIS, JOURS } from './config/domaines.js?v=18';
+import { lire, definition, rarete, medaille, dejaFaites, comptes, parCategorie, hautsFaits, plusRares, badges, ruban, decennies, souvenirDuJour, dernierPoint, pointDavant, phraseRoue } from './coeur.js?v=18';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -312,20 +312,41 @@ function annoncer(petit, fort, action) {
 
 // ---------- Le volet à étapes ----------
 
+/* Le geste retour d'Android (et le bouton Précédent) ferme le volet au lieu de quitter
+   la page : chaque volet ouvert pose une entrée d'historique { volet: true }. Fermer
+   par un bouton retire cette entrée (history.back), et le popstate qui suit ne doit
+   rien refermer d'autre. `retrait` dit qu'on attend ce popstate-là : si un volet s'est
+   rouvert entre-temps (Enregistrer → bilan), on lui repose son entrée à ce moment. */
 let flux = null;
 let ouvreur = null;
+let retrait = false;
+if (history.state?.volet) history.replaceState(null, ''); // rechargée volet ouvert : rien n'est ouvert
 function ouvrirVolet(genre, etapes, fin, apres) {
   $('scrim').firstElementChild.setAttribute('data-kind', genre);
   if (!flux) ouvreur = document.activeElement;
+  if (!flux && !retrait && !history.state?.volet) history.pushState({ volet: true }, '');
   flux = { etapes, i: 0, fin, apres };
   $('scrim').hidden = false;
+  document.documentElement.classList.add('volet-ouvert');
   montrerEtape();
 }
-function fermerVolet() {
+function cacherVolet() {
   $('scrim').hidden = true;
+  document.documentElement.classList.remove('volet-ouvert');
   flux = null;
   if (ouvreur?.isConnected) ouvreur.focus();
 }
+function fermerVolet() {
+  cacherVolet();
+  if (history.state?.volet && !retrait) { retrait = true; history.back(); }
+}
+addEventListener('popstate', () => {
+  if (retrait) { retrait = false; if (flux) history.pushState({ volet: true }, ''); return; }
+  if (!flux) return;
+  // Retour pendant un formulaire à étapes : l'étape d'avant, comme le bouton « Retour ».
+  if (flux.i > 0) { flux.i -= 1; montrerEtape(); history.pushState({ volet: true }, ''); }
+  else cacherVolet();
+});
 function montrerEtape() {
   const e = flux.etapes[flux.i];
   $('dlg-step').textContent = e.label + (flux.etapes.length > 1 ? ` · ${flux.i + 1} sur ${flux.etapes.length}` : '');
