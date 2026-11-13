@@ -7,7 +7,7 @@
    répercuter dans le HTML, le CSS ou les modules.
    ========================================================================= */
 
-const VERSION = '0.2.0';
+const VERSION = '0.2.1';
 /* Toutes nos apps partagent l'origine replica-n8n.github.io, donc le même
    CacheStorage. Le nom porte l'app et sa portée, et l'activation ne supprime
    QUE ces caches-là : avant, chaque mise à jour effaçait le hors ligne des

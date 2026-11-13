@@ -30,10 +30,10 @@ for (const [nom, chemin] of PAGES) {
     // ne peut pas rétrécir pousse le bouton dehors, un bouton trop haut écrase
     // au contraire le contenu sans jamais sortir de l'écran.
     if (process.argv.includes('--essai-pousse')) {
-      await page.addStyleTag({ content: '.compte { min-height: 520px }' });
+      await page.evaluate((css) => { const s = new CSSStyleSheet(); s.replaceSync(css); document.adoptedStyleSheets = [...document.adoptedStyleSheets, s]; }, '.compte { min-height: 520px }');
     }
     if (process.argv.includes('--essai-ecrase')) {
-      await page.addStyleTag({ content: '.plus { height: 420px }' });
+      await page.evaluate((css) => { const s = new CSSStyleSheet(); s.replaceSync(css); document.adoptedStyleSheets = [...document.adoptedStyleSheets, s]; }, '.plus { height: 420px }');
     }
     const fichier = `maquettes/captures/${nom}-${suffixe}.png`;
     await page.screenshot({ path: fichier });

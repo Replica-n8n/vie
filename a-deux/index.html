@@ -2,6 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<!-- Ce que la page a le droit de charger et de contacter : elle-même, rien d'autre.
+     Un script piégé ne pourrait pas envoyer les données ailleurs. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<!-- La taille de texte choisie dans les réglages du téléphone (Chrome Android) : tout est en rem, rien ne fixe la racine. -->
+<meta name="text-scale" content="scale">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>À deux</title>
 <meta name="description" content="Les langages de l'amour de deux personnes, relus à chaque ouverture, et vos propres idées de sorties. Fonctionne hors ligne.">

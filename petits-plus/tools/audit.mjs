@@ -49,10 +49,10 @@ await page.goto(BASE + '/', { waitUntil: 'load' });
 await page.evaluate(() => document.fonts.ready);
 
 if (process.argv.includes('--essai-cible')) {
-  await page.addStyleTag({ content: '.plus { height: 30px } .annuler { min-height: 20px }' });
+  await page.evaluate((css) => { const s = new CSSStyleSheet(); s.replaceSync(css); document.adoptedStyleSheets = [...document.adoptedStyleSheets, s]; }, '.plus { height: 30px } .annuler { min-height: 20px }');
 }
 if (process.argv.includes('--essai-couleur')) {
-  await page.addStyleTag({ content: '.valeurs span.en-cours { color: #4a4646 }' });
+  await page.evaluate((css) => { const s = new CSSStyleSheet(); s.replaceSync(css); document.adoptedStyleSheets = [...document.adoptedStyleSheets, s]; }, '.valeurs span.en-cours { color: #4a4646 }');
 }
 await page.waitForTimeout(250);
 

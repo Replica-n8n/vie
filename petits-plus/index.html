@@ -2,6 +2,10 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<!-- Ce que la page a le droit de charger et de contacter : elle-même, rien d'autre.
+     Un script piégé ne pourrait pas envoyer les données ailleurs. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'; connect-src 'self' https://petits-plus.jfrxdi0zz.workers.dev http://127.0.0.1:8788">
+<meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Petits plus</title>
 <meta name="description" content="Compter les moments qui font du bien.">

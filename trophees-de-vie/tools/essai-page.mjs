@@ -338,9 +338,10 @@ try {
   const radarTextes = await page.$$eval('#radar text', (ts) => ts.map((t) => { const b = t.getBoundingClientRect(); return { sel: 'radar', x: b.left, y: b.top, w: b.width, h: b.height, c: getComputedStyle(t).fill, gros: false }; }));
   // Les coupes aussi doivent se détacher du fond : 3:1, comme tout dessin qui porte un sens.
   const coupes = await page.$$eval('.page .m', (ms) => ms.map((m) => { const b = m.getBoundingClientRect(); return { sel: `coupe ${m.className.replace('m ', '')}`, x: b.left, y: b.top, w: b.width, h: b.height, c: getComputedStyle(m).backgroundColor, gros: true }; }));
-  const style = await page.addStyleTag({ content: '*{color:transparent !important} svg text,svg tspan{fill:transparent !important} .m{visibility:hidden}' });
+  // Feuille construite plutôt qu'un <style> : la CSP de la page refuse le style en ligne.
+  await page.evaluate((css) => { const s = new CSSStyleSheet(); s.replaceSync(css); document.adoptedStyleSheets = [...document.adoptedStyleSheets, s]; }, '*{color:transparent !important} svg text,svg tspan{fill:transparent !important} .m{visibility:hidden}');
   const capture = (await page.screenshot()).toString('base64');
-  await style.evaluate((n) => n.remove());
+  await page.evaluate(() => { document.adoptedStyleSheets = document.adoptedStyleSheets.slice(0, -1); });
   const mesures = await page.evaluate(async ({ capture, zones }) => {
     const img = new Image(); img.src = `data:image/png;base64,${capture}`; await img.decode();
     const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;
