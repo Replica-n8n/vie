@@ -278,12 +278,13 @@
   $('#idee-annuler').addEventListener('click', finirEdition);
 
   /* La touche Entrée vaut l'appui sur « + » : sinon le clavier se referme
-     sans rien enregistrer, et l'idée semble perdue. */
+     sans rien enregistrer, et l'idée semble perdue. Pas pendant une
+     composition (clavier asiatique, dictée) : Entrée y valide le mot. */
   $('#ajout-texte').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); soumettre('accueil'); }
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); soumettre('accueil'); }
   });
   $('#idee-texte').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); soumettre('idees'); }
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); soumettre('idees'); }
   });
 
   $('#voir-idees').addEventListener('click', () => aller({ ecran: 'idees' }));
