@@ -393,6 +393,15 @@ const ilYA = (jours, heure = 12) => {
   return Math.min(d.getTime(), Date.now() - 60000);
 };
 const unMoment = (id, instant, langue = null) => ({ id, instant, auteur: 'moi', langue, supprime: false });
+// Ouvre le dernier mois de l'année. Après un changement d'écran, l'app ignore
+// 350 ms tout appui à moins de 40 px du précédent (protection du double appui) :
+// selon la date, la case d'hier ou d'aujourd'hui tombe dans ce rayon et son appui
+// était avalé. Le contrôle 31 échouait certains jours (37 px le 2026-11-13), et
+// le 27 passait sans rien vérifier. On attend donc la fin de cette protection.
+const ouvrirMois = async (page) => {
+  await page.locator('.annee-ligne').last().click();
+  await page.waitForTimeout(400);
+};
 const vivantsRanges = (page) => page.evaluate(() =>
   JSON.parse(localStorage.getItem('pp:moments:v1')).filter((m) => !m.supprime).length);
 
@@ -423,7 +432,7 @@ const vivantsRanges = (page) => page.evaluate(() =>
   const hauteurs = await page.evaluate(() => [...document.querySelectorAll('.annee-ligne')]
     .map((n) => Math.round(n.getBoundingClientRect().height)));
   verifier('chaque ligne se touche à 44 px', hauteurs.every((h) => h >= 44), hauteurs.join(', '));
-  await page.locator('.annee-ligne').last().click();
+  await ouvrirMois(page);
   verifier('toucher une ligne ouvre son mois', await page.locator('.annee-calendrier').isVisible());
   const cases = await page.evaluate(() => [...document.querySelectorAll('button.annee-jour')]
     .map((n) => { const r = n.getBoundingClientRect(); return Math.round(Math.min(r.width, r.height)); }));
@@ -438,7 +447,7 @@ const vivantsRanges = (page) => page.evaluate(() =>
 {
   const { contexte, page } = await ouvrirAvec([unMoment('a', ilYA(0))]);
   await page.locator('.lien-annee').click();
-  await page.locator('.annee-ligne').last().click();
+  await ouvrirMois(page);
   const boutons = await page.locator('button.annee-jour').count();
   verifier('seuls les jours qui ont des moments se touchent', boutons === 1, `${boutons}`);
   await contexte.close();
@@ -450,7 +459,7 @@ const vivantsRanges = (page) => page.evaluate(() =>
     unMoment('a', ilYA(0, 8), 'services'), unMoment('b', ilYA(0, 9)),
   ]);
   await page.locator('.lien-annee').click();
-  await page.locator('.annee-ligne').last().click();
+  await ouvrirMois(page);
   await page.locator('button.annee-jour.aujourdhui').click();
   verifier("le volet du jour s'ouvre", await page.locator('#volet-jour').isVisible());
   const lignes = await page.locator('.jour-ligne').count();
@@ -470,7 +479,7 @@ const vivantsRanges = (page) => page.evaluate(() =>
 {
   const { contexte, page } = await ouvrirAvec([unMoment('a', ilYA(0, 8)), unMoment('b', ilYA(0, 9))]);
   await page.locator('.lien-annee').click();
-  await page.locator('.annee-ligne').last().click();
+  await ouvrirMois(page);
   await page.locator('button.annee-jour.aujourdhui').click();
   await page.locator('.jour-retirer').first().click();
   await page.waitForTimeout(6400);
@@ -488,7 +497,7 @@ const vivantsRanges = (page) => page.evaluate(() =>
 {
   const { contexte, page } = await ouvrirAvec([unMoment('a', ilYA(0, 8)), unMoment('b', ilYA(0, 9))]);
   await page.locator('.lien-annee').click();
-  await page.locator('.annee-ligne').last().click();
+  await ouvrirMois(page);
   await page.locator('button.annee-jour.aujourdhui').click();
   await page.locator('.jour-retirer').first().click();
   await page.evaluate(() => {
@@ -504,10 +513,12 @@ const vivantsRanges = (page) => page.evaluate(() =>
 {
   const { contexte, page } = await ouvrirAvec([unMoment('a', ilYA(1)), unMoment('b', ilYA(0))]);
   await page.locator('.lien-annee').click();
-  await page.locator('.annee-ligne').last().click();
+  await ouvrirMois(page);
   const hier = page.locator('button.annee-jour:not(.aujourdhui)');
   if (await hier.count()) {
     await hier.first().click();
+    // Sans ce premier contrôle, un appui avalé passait pour « pas de Retirer ».
+    verifier("le volet d'hier s'ouvre", await page.locator('#volet-jour').isVisible());
     verifier("un moment d'hier n'offre pas « Retirer »", (await page.locator('.jour-retirer').count()) === 0);
   } else {
     verifier("hier est dans le mois précédent : couvert par les tests du modèle", true);
@@ -565,7 +576,7 @@ const vivantsRanges = (page) => page.evaluate(() =>
 {
   const { contexte, page } = await ouvrirAvec([unMoment('a', ilYA(1)), unMoment('b', ilYA(0))]);
   await page.locator('.lien-annee').click();
-  await page.locator('.annee-ligne').last().click();
+  await ouvrirMois(page);
   const hier = page.locator('button.annee-jour:not(.aujourdhui)');
   if (await hier.count()) {
     await hier.first().click();
