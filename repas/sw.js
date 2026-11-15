@@ -1,6 +1,6 @@
 // Service worker de Repas : l'app s'ouvre hors ligne une fois installée.
 // VERSION suit le ?v= d'index.html et de js/app.js : les monter ensemble (voir CLAUDE.md).
-const VERSION = 2;
+const VERSION = 3;
 
 const CACHE = `repas:app:v${VERSION}`;
 const PREFIXE = 'repas:app:';

@@ -1,7 +1,7 @@
 // Repas : la semaine (14 repas), les courses et les fiches de recettes.
 // Le plan vient de plan.json, déposé chaque semaine par repas/tools/semaine.mjs ; les cases
 // cochées restent dans le téléphone (localStorage, une clé par semaine).
-import { MACROS, somme, reste, fraction, lireEtat, ecrireEtat, jourParDefaut, dateLocale } from './coeur.js?v=2';
+import { MACROS, somme, reste, fraction, lireEtat, ecrireEtat, jourParDefaut, dateLocale } from './coeur.js?v=3';
 
 const S = { plan: null, etat: { cuisines: {}, pris: {} }, jour: null, vue: 'jour' };
 const $ = (id) => document.getElementById(id);
@@ -66,8 +66,9 @@ function plat(r) {
   // Le féculent suggéré par la recette, pesé cuit, pour viser les calories et les glucides du repas.
   const fec = r.accompagnement ? `avec ${r.accompagnement.g} g de ${r.accompagnement.nom.replace(/\s*\(.*\)$/, '')} cuit` : '';
   const extra = [r.part ? `${fraction(r.part)} portions par assiette` : '', fec, r.facteur ? `recette × ${fraction(r.facteur)}` : '', r.double ? `en double : ${esc(r.double)}` : '', r.restesDe ? `restes de ${esc(r.restesDe)}` : ''].filter(Boolean);
-  const meta = [esc(detail(r)), ...extra, `${esc(r.temps)} min`].filter(Boolean).join(' · ');
-  return `<article class="plat ${teinte(r.ing)}"><span class="puce">${esc(r.moment)}</span><h2>${esc(court(r))}</h2>
+  // Le temps est TOUJOURS celui de la recette à cuisiner, même pour des restes.
+  const meta = [esc(detail(r)), ...extra, `${esc(r.temps)} min de cuisine`].filter(Boolean).join(' · ');
+  return `<article class="plat ${teinte(r.ing)}"><span class="puces-plat"><span class="puce">${esc(r.moment)}</span>${r.decouverte ? '<span class="puce decouv">Découverte</span>' : ''}</span><h2>${esc(court(r))}</h2>
     <span class="meta">${meta}</span>
     ${r.manques?.length ? `<span class="meta manque">Non compté dans les chiffres : ${r.manques.map(esc).join(', ')}</span>` : ''}
     ${r.cuisson && S.plan.recettes?.[r.cuisson] ? `<button type="button" class="ouvrir" data-fiche="${esc(r.cuisson)}">Voir la recette</button>` : ''}
@@ -80,7 +81,7 @@ function vueSemaine(v, jours) {
   $('sous').textContent = `${S.plan.libelle || ''} · ${n} sur ${S.plan.repas.length} cuisinés`;
   const auj = dateLocale();
   const lignes = jours.map((j) => `<div class="ligne ${j.date === auj ? 'auj' : ''}"><span class="jr">${esc(j.nom.slice(0, 3))}</span>${repasDu(j.date).map((r) =>
-    `<button type="button" class="mini ${teinte(r.ing)}" data-jour="${j.date}" data-va="jour" aria-label="${esc(j.nom)} ${esc(r.moment)} : ${esc(court(r))}"><b>${esc(court(r))}</b><small>${esc(r.temps)} min</small>${S.etat.cuisines[r.id] ? `<span class="ok">${CHECK('var(--surAction)', 13)}</span>` : ''}</button>`).join('')}</div>`).join('');
+    `<button type="button" class="mini ${teinte(r.ing)}" data-jour="${j.date}" data-va="jour" aria-label="${esc(j.nom)} ${esc(r.moment)} : ${esc(court(r))}"><b>${esc(court(r))}</b><small>${esc(r.temps)} min${r.decouverte ? ' · découverte' : ''}</small>${S.etat.cuisines[r.id] ? `<span class="ok">${CHECK('var(--surAction)', 13)}</span>` : ''}</button>`).join('')}</div>`).join('');
   const nb = jours.length || 1, tot = somme(S.plan.repas), moy = {};
   for (const [k] of MACROS) moy[k] = Math.round(tot[k] / nb);
   /* Un plat compte une fois, même cuisiné avant la semaine. */
@@ -98,8 +99,8 @@ function vueCourses(v) {
   v.innerHTML = `<section class="bloc">${rayons.map((ray) => `<div class="rayon">${esc(ray)}</div>` + aPrendre.filter((a) => a.rayon === ray).map((a) => {
       const p = !!S.etat.pris[a.id];
       return `<button type="button" class="article" data-pris="${esc(a.id)}" aria-pressed="${p}"><span class="case" aria-hidden="true">${p ? CHECK('var(--surAction)', 18) : ''}</span><span class="nom"><b>${esc(a.nom)}</b>${a.stock ? `<small>${esc(a.stock)}</small>` : ''}</span><span class="qte">${esc(a.qte)}</span></button>`; }).join('')).join('')}
-    ${c.some((a) => a.enStock) ? `<div class="rayon">Déjà à la maison</div>${c.filter((a) => a.enStock).map((a) => `<div class="stock"><span>${esc(a.nom)}<small>${esc(a.stock || '')}</small></span><span>${esc(a.qte)}</span></div>`).join('')}` : ''}
-    <p class="note">${S.plan.stockConnu ? 'Les quantités tiennent compte de ton inventaire. « Vérifie » : tu en as, mais je ne sais pas combien.' : 'Tout est listé : ton inventaire n’est pas encore connu.'}</p></section>`;
+    ${c.some((a) => a.enStock) ? `<div class="rayon">Déjà à la maison</div>${c.filter((a) => a.enStock).sort((x, y) => !!y.verifier - !!x.verifier).map((a) => `<div class="stock"><span>${esc(a.nom)}<small>${esc(a.stock || '')}</small></span><span>${esc(a.qte)}</span></div>`).join('')}` : ''}
+    <p class="note">${S.plan.stockConnu ? 'Les quantités tiennent compte de ton inventaire. « Vérifie » : tu en as, mais je ne sais pas combien il en reste.' : 'Tout est listé : ton inventaire n’est pas encore connu.'}</p></section>`;
 }
 
 // ---------- La fiche de recette ----------
@@ -109,13 +110,14 @@ function ouvrirFiche(cid, bouton) {
   const r = S.plan.recettes?.[cid]; if (!r) return;
   ouvreur = bouton || null;
   const fiche = $('fiche');
-  const lignes = r.ingredients.map((i) => `${i.section ? `<li class="sec">${esc(i.section)}</li>` : ''}<li><b>${esc(i.qte)}</b><span>${esc(i.texte)}${i.nonCompte ? ' <span class="nc">(non compté)</span>' : ''}</span></li>`).join('');
+  const assiettes = S.plan.repas.filter((x) => x.cuisson === cid).length * 2; // deux personnes à chaque repas
+  const lignes = r.ingredients.map((i) => `${i.section ? `<li class="sec">${esc(i.section)}</li>` : ''}<li>${esc(i.texte)}${i.nonCompte ? ' <span class="nc">(non compté)</span>' : ''}</li>`).join('');
   fiche.innerHTML = `<div class="page">
     <div class="haut"><span class="sous">${r.facteur && r.facteur !== 1 ? `Recette × ${fraction(r.facteur)}` : 'Recette telle quelle'} · ${esc(r.temps)} min</span><button type="button" class="fermer" data-fermer>Fermer</button></div>
+    ${r.decouverte ? '<span class="puce decouv">Découverte</span>' : ''}
     <h2 id="fiche-titre">${esc(r.nom)}</h2>
-    <p class="sous">À cuisiner : ${esc(r.quand)}</p>
-    <section class="bloc"><h3>Ingrédients, quantités de la semaine</h3><ul class="ing">${lignes}</ul>
-      <p class="note">À gauche, ce qu’il faut pour la semaine ; à droite, la ligne de la recette d’origine.</p></section>
+    <p class="sous">À cuisiner : ${esc(r.quand)}${assiettes ? ` · ${assiettes} assiettes` : ''}</p>
+    <section class="bloc"><h3>Ingrédients</h3><ul class="ing">${lignes}</ul></section>
     <section class="bloc"><h3>Étapes</h3><ol class="etapes">${r.etapes.map((e) => `<li>${esc(e)}</li>`).join('')}</ol>
       ${r.notes ? `<p class="note">${esc(r.notes)}</p>` : ''}</section>
     <p class="sous"><a href="${esc(r.lien)}" target="_blank" rel="noopener">Recette d’origine</a></p></div>`;
