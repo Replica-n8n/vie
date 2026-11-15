@@ -1,7 +1,7 @@
 // Repas : la semaine (14 repas), les courses et les fiches de recettes.
 // Le plan vient de plan.json, déposé chaque semaine par repas/tools/semaine.mjs ; les cases
 // cochées restent dans le téléphone (localStorage, une clé par semaine).
-import { MACROS, somme, reste, fraction, lireEtat, ecrireEtat, jourParDefaut, dateLocale } from './coeur.js?v=1';
+import { MACROS, somme, reste, fraction, lireEtat, ecrireEtat, jourParDefaut, dateLocale } from './coeur.js?v=2';
 
 const S = { plan: null, etat: { cuisines: {}, pris: {} }, jour: null, vue: 'jour' };
 const $ = (id) => document.getElementById(id);
@@ -63,7 +63,9 @@ function vueJour(v, jours) {
 
 function plat(r) {
   const fait = !!S.etat.cuisines[r.id];
-  const extra = [r.part ? `${fraction(r.part)} portions par assiette` : '', r.facteur ? `recette × ${fraction(r.facteur)}` : '', r.double ? `en double : ${esc(r.double)}` : '', r.restesDe ? `restes de ${esc(r.restesDe)}` : ''].filter(Boolean);
+  // Le féculent suggéré par la recette, pesé cuit, pour viser les calories et les glucides du repas.
+  const fec = r.accompagnement ? `avec ${r.accompagnement.g} g de ${r.accompagnement.nom.replace(/\s*\(.*\)$/, '')} cuit` : '';
+  const extra = [r.part ? `${fraction(r.part)} portions par assiette` : '', fec, r.facteur ? `recette × ${fraction(r.facteur)}` : '', r.double ? `en double : ${esc(r.double)}` : '', r.restesDe ? `restes de ${esc(r.restesDe)}` : ''].filter(Boolean);
   const meta = [esc(detail(r)), ...extra, `${esc(r.temps)} min`].filter(Boolean).join(' · ');
   return `<article class="plat ${teinte(r.ing)}"><span class="puce">${esc(r.moment)}</span><h2>${esc(court(r))}</h2>
     <span class="meta">${meta}</span>
