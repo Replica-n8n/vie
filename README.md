@@ -6,3 +6,4 @@ son code, ses tests et son `CLAUDE.md` vivent dans son dossier.
 - `a-deux/` : À deux
 - `petits-plus/` : Petits plus
 - `trophees-de-vie/` : Trophées de vie
+- `repas/` : Repas (la semaine, les courses, les recettes)

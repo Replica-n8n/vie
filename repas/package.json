@@ -1,0 +1,11 @@
+{
+  "name": "repas",
+  "private": true,
+  "type": "module",
+  "description": "Les repas de la semaine, les courses et les recettes. PWA vanilla, hors ligne, sans serveur.",
+  "scripts": {
+    "test": "node --test",
+    "polices": "node tools/polices.mjs",
+    "icones": "node tools/icones.mjs"
+  }
+}

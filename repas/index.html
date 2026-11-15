@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<!-- Ce que la page a le droit de charger et de contacter : elle-même, rien d'autre. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Repas</title>
+<meta name="description" content="Les repas de la semaine, les courses et les recettes.">
+<meta name="theme-color" content="#f4f2fa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131315" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="icone.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icone-192.png">
+<link rel="preload" href="polices/big-shoulders-900.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/app.css?v=1">
+</head>
+<body>
+<div class="page">
+  <header class="tete">
+    <h1 id="titre">Repas</h1>
+    <button class="installer" id="installer" type="button" hidden>Installer</button>
+    <p id="sous">Chargement du planning…</p>
+    <p class="alerte" id="alerte" hidden></p>
+  </header>
+  <main id="vue" class="page"></main>
+</div>
+<nav class="nav" aria-label="Vues"><div>
+  <button type="button" data-vue="jour" aria-pressed="true"><i aria-hidden="true">●</i>Jour</button>
+  <button type="button" data-vue="semaine" aria-pressed="false"><i aria-hidden="true">▦</i>Semaine</button>
+  <button type="button" data-vue="courses" aria-pressed="false"><i aria-hidden="true">☰</i>Courses</button>
+</div></nav>
+<section class="fiche" id="fiche" hidden role="dialog" aria-modal="true" aria-labelledby="fiche-titre"></section>
+<div role="status" id="annonce" class="sr"></div>
+<script type="module" src="js/app.js?v=1"></script>
+</body>
+</html>
